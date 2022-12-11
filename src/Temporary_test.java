@@ -40,7 +40,6 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 
 class Global_savetext{
     String temp_text;
-    String temp_raw;
     boolean isVisited=false;
 
     int duplicates=0;
@@ -51,9 +50,7 @@ class Global_savetext{
     public String getText(){
         return temp_text;
     }
-    public String getRawText(){
-        return temp_raw;
-    }
+
 }
 public class Temporary_test implements ANTLRErrorListener{
     static Global_savetext save = new Global_savetext();
@@ -166,6 +163,15 @@ public class Temporary_test implements ANTLRErrorListener{
                         line_count++;
 //                                    System.out.print("body: ");
                         if(tags_sql_server || tags_mssql || tags_ms_sql_server || tags_sql_srever || tags_tsql && (!tags_csharp2 && !tags_csharp && !tags_php && !tags_xml && !tags_java && !tags_python)){
+                            //tady vybrat vsechny korektni data a vlozit do souboru, ktery nasledne budeme parsrovat, tim padem už tam tahle část s filtry nebude
+                            // idealne to udelat jako mezikrok
+
+                            //push request myssql.g4
+
+                            //vytvorit rekurzivni cyklus pro spatne parsry
+
+
+
                             //System.out.println("Body");
                             //System.out.println(body);
                             //System.out.println("Line");
@@ -348,11 +354,13 @@ public class Temporary_test implements ANTLRErrorListener{
                     FileWriter fw = new FileWriter("bad_SQL.txt", true);
                     BufferedWriter bw = new BufferedWriter(fw);
                     bw.write(save.temp_text);
-                    bw.write("----------------------------------------------\n");
+                    bw.write("nextCode;\n");
                     bw.newLine();
                     bw.close();
                     fw.close();
                     isAlreadyWritten = true;
+
+
                     //}
                 }
                 catch (IOException fnfe){
