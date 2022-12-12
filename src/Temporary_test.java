@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.tree.pattern.ParseTreePatternMatcher;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -56,7 +57,10 @@ public class Temporary_test implements ANTLRErrorListener{
     static Global_savetext save = new Global_savetext();
     static boolean isAlreadyWritten=false;
     public static void main(String[] args) throws Exception {
+        XML_handler xml_handler = new XML_handler("preparsed_statements_2.xml");
         try {
+
+
             //SevenZFile sevenZFile = new SevenZFile(new File("C:\\Users\\sisin\\IdeaProjects\\B_tmp\\src\\randomtext3.7z"));
             SevenZFile sevenZFile = new SevenZFile(new File("C:\\Users\\sisin\\Downloads\\Posts.7z"));
 
@@ -81,7 +85,7 @@ public class Temporary_test implements ANTLRErrorListener{
             while(sevenZFile.read(bytes,0,1000000) != -1) {
                 //size+=0.002;
                 size+=0.001;
-//                System.out.printf("%.5f", size);
+                System.out.println(size);
 //                System.out.println(" GB");
                 //System.out.println("Number of records: "+line_count);
 
@@ -176,6 +180,32 @@ public class Temporary_test implements ANTLRErrorListener{
                             //System.out.println(body);
                             //System.out.println("Line");
                             //System.out.println(line);
+
+                            //nove pridano
+
+
+                            if(text != null && text.length > 0) {
+                                for (String txt : text) {
+                                    if(txt.contains("SELECT") && !txt.contains("new SqlClient.SqlConnection")) {
+                                        txt = txt.replaceAll("&gt;", ">").replaceAll("&lt;", "<");
+
+                                        //FileWriter fw = new FileWriter("preparsed_statements.xml", true);
+                                        //BufferedWriter bw = new BufferedWriter(fw);
+                                        //remove \n from string
+                                        //txt = txt.substring(0, txt.length()-1);
+                                        //remove all \n from string
+                                        txt = txt.replaceAll("\n","");
+                                        xml_handler.addToXML(txt,"preparsed_statements_2.xml");
+                                        //xml_handler.addToXML(txt,bw);
+                                        //bw.write("<code>"+txt+"</code>");
+                                        //bw.newLine();
+                                        //bw.close();
+                                    }
+                                }
+                            }
+
+                            //odkomentovat po přeparsovani dotazu do souboru
+                            /*
                             if(text != null && text.length > 0) {
                                 for (String txt : text) {
                                     //if(txt.contains("SELECT * FROM") && !txt.contains("declare")) {
@@ -231,6 +261,9 @@ public class Temporary_test implements ANTLRErrorListener{
                                     }
                                 }
                             }
+                             */
+
+
                         }
                         //System.out.println(body);
                         //System.out.println(line);
