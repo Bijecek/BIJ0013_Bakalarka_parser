@@ -32,21 +32,25 @@ public class XML_handler {
         //Element root = document.getDocumentElement();
 
     }
-    public void addToXML(String text, String path) throws IOException, SAXException, TransformerException {
+    public void addToXML(String text, String path, String id) throws IOException, SAXException, TransformerException {
         Document doc = this.documentBuilder.parse(path);
         Node root=doc.getFirstChild();
         Element newserver=doc.createElement("statement");
         newserver.setTextContent(text);
         root.appendChild(newserver);
+        //
+        newserver.setAttribute("id", id);
 
 
         DOMSource source = new DOMSource(doc);
 
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         //Transformer transformer = transformerFactory.newTransformer();
-        Transformer transformer = transformerFactory.newTransformer(new StreamSource(new File("src/prettyprint.xslt")));
+        File f_tmp = new File("src/prettyprint.xslt");
+        Transformer transformer = transformerFactory.newTransformer(new StreamSource(f_tmp.getAbsolutePath()));
 
-        StreamResult result = new StreamResult(new File(path));
+        File f = new File(path);
+        StreamResult result = new StreamResult(f.getAbsolutePath());
         transformer.setOutputProperty(OutputKeys.STANDALONE, "no");
 
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
