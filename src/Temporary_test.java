@@ -37,12 +37,13 @@ import java.util.Date;
 
 import org.apache.commons.lang3.StringUtils;
 
+import static java.lang.System.gc;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 public class Temporary_test{
     public void run() throws Exception {
-        XML_handler xml_handler = new XML_handler("preparsed_statements_withid.xml");
-        List<String> questions_ID = new ArrayList<String>();
+        XML_handler xml_handler = new XML_handler("preparsed_statements_withid_final1_updated_8.xml");
+        Set<Integer> questions_ID = new HashSet<>();
         try {
 
             SevenZFile sevenZFile = new SevenZFile(new File("C:\\Users\\sisin\\Downloads\\Posts.7z"));
@@ -53,120 +54,209 @@ public class Temporary_test{
             System.out.println("Size : " + entry.getSize());
             System.out.println("--------------------------------");
 
-
-            byte[] bytes = new byte[100000000];
-            String bytes_str;
+            //100000000
+            byte[] bytes = new byte[50000000];
+            String bytes_str = null;
 
             String leftover_line = "";
-            double line_count=0;
             int temp_line=0;
             String line = "";
             double size=0;
             //1000000
             //50000000
-            while(sevenZFile.read(bytes,0,100000000) != -1) {
-                long startTime = System.currentTimeMillis();
+            int length_read = 50000000;
 
+            String bytes_temp = null;
+            Reader inputString = null;
+            BufferedReader reader = null;
+            String previous_line = null;
+            DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            InputSource is = new InputSource();
+            Document doc = null;
+            String body = null;
+            String[] text = null;
+            String tags = null;
+            boolean positive_Tags = false;
+            boolean negative_Tags = false;
+            int q_a_id;
+            String question_answer_ID = null;
+            boolean parentHasExpectedFlags;
+            int parent_id;
+            ArrayList<String> passed_Statements = new ArrayList<>();
+            ArrayList<Integer> passed_IDs = new ArrayList<>();
+            long startTime = System.currentTimeMillis();
+            long endTime;
+            boolean isthere = false;
+            String[] text_without_comments = null;
+            int lomitko_count=0;
+            while(sevenZFile.read(bytes,0,length_read) != -1) {
+
+/*
                 if(leftover_line.contains("/>")){
-                    String bytes_temp = new String(bytes);
+                    bytes_temp = new String(bytes);
                     bytes_str ="";
                     bytes_str = bytes_str.concat(leftover_line + "\r");
                     bytes_str = bytes_str.concat(bytes_temp);
                 }
-                else{
-                    bytes_str ="";
-                    bytes_str = bytes_str.concat(leftover_line + "\r");
-                    bytes_str = bytes_str.concat(new String(bytes));
-                }
-                Reader inputString = new StringReader(bytes_str);
-                BufferedReader reader = new BufferedReader(inputString);
 
+ */
+               // else{
+                    bytes_temp = new String(bytes);
+                    bytes = new byte[50000000];
+                    bytes_str = new String();
+                    bytes_str += leftover_line;
+                    //bytes_str += bytes_temp;
+                    bytes_str = bytes_str.concat(bytes_temp);
+
+                //}
+
+                //inputString = new StringReader(bytes_str);
+                //inputString = new StringReader(bytes_str);
+                //reader = new BufferedReader(inputString);
+                //inputString = new StringReader(bytes_str);
+                reader = new BufferedReader(new StringReader(bytes_str));
 
                 while(temp_line <= 1){
                     line = reader.readLine();
                     temp_line++;
                 }
 
-                String previous_line = "";
-
+                previous_line = "";
                 while ((line = reader.readLine()) != null) {
 
                     if (line.length() > 2 && line.charAt(2) == '<' && line.charAt(line.length() - 1) == '>' && temp_line == 2) {
 
-                        DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+                        //db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 
-                        InputSource is = new InputSource();
                         is.setCharacterStream(new StringReader(line));
 
-                        Document doc = db.parse(is);
+                        doc = db.parse(is);
 
-                        boolean tags_sql_server = doc.getDocumentElement().getAttribute("Tags").contains("sql-server");
-                        boolean tags_mssql = doc.getDocumentElement().getAttribute("Tags").contains("mssql");
-                        boolean tags_ms_sql_server = doc.getDocumentElement().getAttribute("Tags").contains("ms-sql-server");
-                        boolean tags_sql_srever = doc.getDocumentElement().getAttribute("Tags").contains("sql-srever");
-                        boolean tags_tsql = doc.getDocumentElement().getAttribute("Tags").contains("tsql");
+                        tags = doc.getDocumentElement().getAttribute("Tags");
+                        positive_Tags = tags.contains("sql-server") || tags.contains("mssql") || tags.contains("ms-sql-server") || tags.contains("sql-srever") || tags.contains("tsql");
+                        negative_Tags = tags.contains("linq") || tags.contains("coldfusion") || tags.contains("db2") || tags.contains("oracle") ||tags.contains("mdx") ||tags.contains("postgresql") || tags.contains("mysql") || tags.contains("cfml") || tags.contains("linq-to-sql") || tags.contains("vbscript") || tags.contains(".net") || tags.contains("c++") || tags.contains("ado") || tags.contains("ms-access") || tags.contains("vba") || tags.contains("asp-classic") || tags.contains("c%23") || tags.contains("c#") || tags.contains("php") || tags.contains("xml") || tags.contains("java") || tags.contains("python");
 
-                        boolean tags_csharp = doc.getDocumentElement().getAttribute("Tags").contains("c%23");
-                        boolean tags_csharp2 = doc.getDocumentElement().getAttribute("Tags").contains("c#");
-                        boolean tags_php = doc.getDocumentElement().getAttribute("Tags").contains("php");
-                        boolean tags_xml = doc.getDocumentElement().getAttribute("Tags").contains("xml");
-                        boolean tags_java = doc.getDocumentElement().getAttribute("Tags").contains("java");
-                        boolean tags_python = doc.getDocumentElement().getAttribute("Tags").contains("python");
 
-                        boolean parentHasExpectedFlags = false;
+                        parentHasExpectedFlags = false;
 
-                        String q_a_id = doc.getDocumentElement().getAttribute("Id");
+                        q_a_id = Integer.parseInt(doc.getDocumentElement().getAttribute("Id"));
 
-                        String question_answer_ID = doc.getDocumentElement().getAttribute("PostTypeId");
+                        //if(q_a_id.equals("43544150") || isthere) {
+                            //isthere = true;
+                            question_answer_ID = doc.getDocumentElement().getAttribute("PostTypeId");
 
-                        if(question_answer_ID.equals("2")){
-                            String parent_id = doc.getDocumentElement().getAttribute("ParentId");
-                            if(questions_ID.contains(parent_id)){
-                                parentHasExpectedFlags = true;
+                            if (question_answer_ID.equals("2")) {
+                                parent_id = Integer.parseInt(doc.getDocumentElement().getAttribute("ParentId"));
+                                if (questions_ID.contains(parent_id)) {
+                                    parentHasExpectedFlags = true;
+                                }
                             }
-                        }
 
-                        String body = doc.getDocumentElement().getAttribute("Body");
-                        String[] text = StringUtils.substringsBetween(body, "<code>", "</code>");
-                        line_count++;
-                        if(parentHasExpectedFlags || tags_sql_server || tags_mssql || tags_ms_sql_server || tags_sql_srever || tags_tsql && (!tags_csharp2 && !tags_csharp && !tags_php && !tags_xml && !tags_java && !tags_python)){
-                            if(text != null && text.length > 0) {
-                                for (String txt : text) {
-                                    if(txt.contains("SELECT") && !txt.contains("new SqlClient.SqlConnection")) {
-                                        txt = txt.replaceAll("&gt;", ">").replaceAll("&lt;", "<");
+                            if (parentHasExpectedFlags || (positive_Tags && !negative_Tags)) {
+                                body = doc.getDocumentElement().getAttribute("Body");
+                                text = StringUtils.substringsBetween(body, "<code>", "</code>");
+                                if (text != null && text.length > 0) {
+                                    for (String txt : text) {
+                                        if (txt.toLowerCase().contains("select") && !txt.toLowerCase().contains(" new ")) {
+                                            if(txt.contains("// ")){
+                                                lomitko_count++;
+                                            }
+                                            if(txt.contains("---")) {
+                                                text_without_comments = StringUtils.substringsBetween(txt, "---", "\n");
+                                                if(text_without_comments != null && text_without_comments.length > 0) {
+                                                    Arrays.sort(text_without_comments, Comparator.comparingInt(String::length).reversed());
+                                                    for (String tmp : text_without_comments) {
+                                                        txt = txt.replace("---"+tmp+"\n","\n");
+                                                    }
+                                                }
+                                            }
+                                            if(txt.contains("--")) {
+                                                text_without_comments = StringUtils.substringsBetween(txt, "--", "\n");
+                                                if(text_without_comments != null && text_without_comments.length > 0) {
+                                                    Arrays.sort(text_without_comments, Comparator.comparingInt(String::length).reversed());
+                                                    for (String tmp : text_without_comments) {
+                                                        txt = txt.replace("--"+tmp+"\n","\n");
+                                                    }
+                                                }
+                                                text_without_comments = StringUtils.substringsBetween(txt, "--", "</statement>");
+                                                if(text_without_comments != null && text_without_comments.length > 0) {
+                                                    Arrays.sort(text_without_comments, Comparator.comparingInt(String::length).reversed());
+                                                    for (String tmp : text_without_comments) {
+                                                        txt = txt.replace("--"+tmp+"\n","\n");
+                                                    }
+                                                }
+                                            }
+                                            if(txt.contains("/*")){
+                                                text_without_comments = StringUtils.substringsBetween(txt, "/*", "*/");
+                                                if(text_without_comments != null && text_without_comments.length > 0) {
+                                                    for (String tmp : text_without_comments) {
+                                                        txt = txt.replace("/*"+tmp+"*/","");
+                                                    }
+                                                }
+                                            }
 
-                                        txt = txt.replaceAll("\n","");
+                                            if(txt.toLowerCase().contains("select ") || txt.toLowerCase().contains("select\n")) {
+                                                txt = txt.replaceAll("&gt;", ">").replaceAll("&lt;", "<");
+                                                txt = txt.replaceAll("&#60;", ">");
+                                                txt = txt.replaceAll("‘", "'");
+                                                txt = txt.replaceAll("’", "'");
+                                                txt = txt.replaceAll("′", "'");
+                                                txt = txt.replaceAll("…","...");
 
-                                        if(question_answer_ID.equals("1")){
-                                            if(!questions_ID.contains(q_a_id)){
-                                                questions_ID.add(q_a_id);
+
+                                                if(txt.contains("&#")){
+                                                    System.out.println("AA");
+                                                }
+                                                txt = txt.replaceAll("\n", "&#10;");
+                                                txt = txt.replaceAll("\\P{Print}", "undef");
+
+                                                if (question_answer_ID.equals("1")) {
+                                                    questions_ID.add(q_a_id);
+                                                }
+                                                //if(Integer.parseInt(q_a_id) > 53328171) {
+                                                passed_Statements.add(txt);
+                                                passed_IDs.add(q_a_id);
+                                                //}
+                                                //xml_handler.addToXML(txt,"preparsed_statements_withid.xml",q_a_id);
                                             }
                                         }
-                                        xml_handler.addToXML(txt,"preparsed_statements_withid.xml",q_a_id);
                                     }
                                 }
                             }
-                        }
-                        previous_line = "";
-                        //line = reader.readLine();
+                            previous_line = "";
+                        //}
 
                     } else {
                         previous_line = line;
-                        //line = line + reader.readLine();
                     }
                 }
 
-                long endTime = System.currentTimeMillis();
 
-                System.out.println(
-                        "Time taken to concatenate 100000 Strings using StringBuffer append : "
-                                + (endTime - startTime) + " ms");
+
                 leftover_line = previous_line;
                 reader.close();
+                //inputString.close();
 
-                bytes = new byte[100000000];
+                if(passed_Statements.size() > 10000 || length_read == 41935589){
+                    endTime = System.currentTimeMillis();
+                    xml_handler.addToXML(passed_Statements,"preparsed_statements_withid_final1_updated_8.xml",passed_IDs);
+                    passed_Statements = new ArrayList<String>();
+                    passed_IDs = new ArrayList<Integer>();
+                    System.out.println(
+                            "Time : "
+                                    + (endTime - startTime) + " ms");
+                    startTime = System.currentTimeMillis();
+                    gc();
+                }
+                //bytes = new byte[100000000];
+                if(sevenZFile.getStatisticsForCurrentEntry().getUncompressedCount() == Long.parseLong("98400000000")){
+                    length_read = 41935589;
+                    bytes = new byte[41935589];
+                    System.out.println("aa");
+                }
             }
-            System.out.println("Number of records: "+line_count);
+            System.out.println("Finished");
+            System.out.println("Lomitka:"+ lomitko_count);
 
             sevenZFile.close();
         } catch (Exception e) {
