@@ -1,21 +1,12 @@
-import org.apache.commons.compress.archivers.sevenz.SevenZFile;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Objects;
 
 public class MyParser {
     public static void main(String[] args) throws Exception {
-        //Temporary_test preload = new Temporary_test();
+        //PreloadClass preload = new PreloadClass();
         //preload.run();
-
-        //for(int i=0;i<2;i++) {
-            ParserClass parserClass = new ParserClass(10);
+            ParserClass parserClass = new ParserClass(0,"statements_select");
             parserClass.run();
-        //}
 
     }
 }

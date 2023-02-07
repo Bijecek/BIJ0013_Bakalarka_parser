@@ -15,51 +15,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.xml.sax.SAXException;
 
 
-class Global_savetext{
-    String original_statement;
-    String temp_text;
-    String temp_id;
-    ArrayList<String> wrong_statements = new ArrayList<>();
-    ArrayList<Integer> wrong_Ids = new ArrayList<>();
-    ArrayList<String> correct_statements = new ArrayList<>();
-    ArrayList<Integer> correct_Ids = new ArrayList<>();
-
-    String statement_For_Parser;
-
-    boolean repair_Helped = true;
-
-    boolean isRepaired = false;
-
-    boolean ready_For_Parse = false;
-
-
-
-    boolean isVisited=false;
-
-
-    public Global_savetext() {
-
-    }
-    public String getText(){
-        return temp_text;
-    }
-
-}
-
 public class ParserClass implements ANTLRErrorListener{
-    static Global_savetext save = new Global_savetext();
-    static boolean isAlreadyWritten=false;
-
-    public int test_id;
-
-    public int number_help;
+    int test_id;
+    int number_help;
     XML_handler xml_handler;
 
     XML_handler xml_handler_correct;
 
     ArrayList<ArrayList<String>> repair_Options = new ArrayList<>();
     ArrayList<String> repairRowAndCharpos = new ArrayList<>();
-    //int repair_charpos;
     Mssql parser;
     ArrayList<String> allowed_Repairs = new ArrayList<>();
 
@@ -85,7 +49,7 @@ public class ParserClass implements ANTLRErrorListener{
     int comma_infront_bracket = 0;
 
     CharStream codePointCharStream = null;
-    Hello lexer = null;
+    Mssql_lexer lexer = null;
     CommonTokenStream tokens = null;
 
     ANTLRErrorListener errorListener = null;
@@ -101,15 +65,40 @@ public class ParserClass implements ANTLRErrorListener{
 
     ArrayList<Integer> positionsForRepair = new ArrayList<>();
 
+    int auto_brackets = 0;
+    int auto_beginend = 0;
+    int auto_comma = 0;
+    int auto_brackets2 = 0;
+
+    int is_corrected = 0;
+
+    String path;
+
+    String original_statement;
+    String temp_text;
+    String temp_id;
+    ArrayList<String> wrong_statements = new ArrayList<>();
+    ArrayList<Integer> wrong_Ids = new ArrayList<>();
+    ArrayList<String> correct_statements = new ArrayList<>();
+    ArrayList<Integer> correct_Ids = new ArrayList<>();
+
+    String statement_For_Parser;
+
+    boolean repair_Helped = true;
+
+    boolean isRepaired = false;
+
+    boolean ready_For_Parse = false;
+    boolean isVisited=false;
 
 
-
-
-    public ParserClass(int test_id) throws ParserConfigurationException, IOException, TransformerException, SAXException {
+    public ParserClass(int test_id, String path) throws ParserConfigurationException, IOException, TransformerException, SAXException {
+        this.path = path;
         this.number_help = test_id+1;
-        this.xml_handler = new XML_handler("preparsed_statements_wrongaa_delete_fourth"+number_help+".xml");
-        this.xml_handler_correct = new XML_handler("preparsed_statements_correct_delete_fourth"+number_help+".xml");
+        this.xml_handler = new XML_handler(path+"_wrong"+this.number_help+".xml");
+        this.xml_handler_correct = new XML_handler(path+"_correct"+this.number_help+".xml");
         this.test_id = test_id;
+        setupRepairsToLookFor();
     }
     public ArrayList<String> comma_or_something_infront(String search_string, String statement_text, boolean add_space_infront){
         int index=0;
@@ -164,6 +153,11 @@ public class ParserClass implements ANTLRErrorListener{
                         else if(statement_text.charAt(i) == 'b' && statement_text.charAt(i+1) == 'y' ){
                             break;
                         }
+                        else{
+                            modified_statement.insert(i-1, " BY");
+                            modified = true;
+                            break;
+                        }
                     }
                 }
                 searchIndex = index + search_string.length()-1;
@@ -179,7 +173,7 @@ public class ParserClass implements ANTLRErrorListener{
         int searchIndex = 0;
         boolean modified = false;
         StringBuilder modified_statement = new StringBuilder(statement_text);
-        while((index = statement_text.indexOf(search_string,searchIndex)) != -1) {
+        while((index = statement_text.toLowerCase().indexOf(search_string,searchIndex)) != -1) {
 
             for(int i=(index+search_string.length()-1);i<statement_text.length();i++){
                 if (statement_text.charAt(i) != ' ' && statement_text.charAt(i) != '\n' && !Character.isDigit(statement_text.charAt(i))) {
@@ -217,20 +211,23 @@ public class ParserClass implements ANTLRErrorListener{
         return nearest;
     }
     public void getIdAndText(String line){
-        save.temp_id = StringUtils.substringBetween(line, "<statement id=\"", "\">");
+        this.temp_id = StringUtils.substringBetween(line, "<statement id=\"", "\">");
 
-        statement_text =  StringUtils.substringBetween(line, "<statement id=\""+save.temp_id+"\">", "</statement>");
+        statement_text =  StringUtils.substringBetween(line, "<statement id=\""+this.temp_id+"\">", "</statement>");
         statement_text = statement_text.replaceAll("&gt;",">").replaceAll("&lt;","<");
-        statement_text = statement_text.replaceAll("&amp;amp","&");
+        statement_text = statement_text.replaceAll("&amp;amp;","&");
     }
     public void test0NoModification(){
-        if(Objects.equals(save.temp_id, "266372")){
-            System.out.println("A");
-        }
         statement_Modified = false;
         statement_text = statement_text.replaceAll("&amp;#10;", "\n");
+        statement_text = statement_text.replaceAll("&amp;quot;","\"");
+        statement_text = statement_text.replaceAll("<br>", " ");
         statement_text = statement_text.replaceAll("</br>", " ");
+        statement_text = statement_text.replaceAll("<pre>", " ");
         statement_text = statement_text.replaceAll("</pre>", " ");
+        statement_text = statement_text.replaceAll("<p>", " ");
+        statement_text = statement_text.replaceAll("</p>", " ");
+        //nebo &lt;br&gt
         statement_Modified = true;
     }
     public void test1FromModification(){
@@ -307,8 +304,8 @@ public class ParserClass implements ANTLRErrorListener{
     }
     public void test6Brackets1stModification(){
         statement_text = statement_text.replaceAll("&amp;#10;", "\n");
-        save.original_statement = statement_text;
-        save.original_statement = save.original_statement.replaceAll("\n","&#10;");
+        this.original_statement = statement_text;
+        this.original_statement = this.original_statement.replaceAll("\n","&#10;");
 
         statement_Modified = false;
         if(statement_text.contains("(") || statement_text.contains(")") ){
@@ -330,8 +327,8 @@ public class ParserClass implements ANTLRErrorListener{
     }
     public void test7Brackets2ndModification(){
         statement_text = statement_text.replaceAll("&amp;#10;", "\n");
-        save.original_statement = statement_text;
-        save.original_statement = save.original_statement.replaceAll("\n","&#10;");
+        this.original_statement = statement_text;
+        this.original_statement = this.original_statement.replaceAll("\n","&#10;");
         statement_Modified = false;
         if(statement_text.contains("(") || statement_text.contains(")") ){
             int left = StringUtils.countMatches(statement_text, "(");
@@ -378,7 +375,7 @@ public class ParserClass implements ANTLRErrorListener{
     }
     public void test10AdvancedModification(){
         statement_text = statement_text.replaceAll("&amp;#10;", "\n");
-        save.statement_For_Parser = statement_text;
+        this.statement_For_Parser = statement_text;
         statement_Modified = true;
     }
     public void executeTestModification(){
@@ -420,7 +417,7 @@ public class ParserClass implements ANTLRErrorListener{
     }
     public void setupLexerAndParserSSLAndBail(){
         codePointCharStream = CharStreams.fromString(statement_text);
-        lexer = new Hello(codePointCharStream);
+        lexer = new Mssql_lexer(codePointCharStream);
 
         //remove cmd output for lexer
         lexer.removeErrorListener(ConsoleErrorListener.INSTANCE);
@@ -434,19 +431,19 @@ public class ParserClass implements ANTLRErrorListener{
         //added
         parser.setBuildParseTree(false);
 
-        //decisionToDFA=  parser.getInterpreter().decisionToDFA;
-        //_sharedContextCache = new PredictionContextCache();
-        //sim = new ParserATNSimulator(
-        //        parser, parser.getATN(), decisionToDFA, _sharedContextCache);
+        decisionToDFA=  parser.getInterpreter().decisionToDFA;
+        _sharedContextCache = new PredictionContextCache();
+        sim = new ParserATNSimulator(
+                parser, parser.getATN(), decisionToDFA, _sharedContextCache);
 
-        //parser.setInterpreter(sim);
+        parser.setInterpreter(sim);
 
         parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
         parser.removeErrorListeners();
         parser.setErrorHandler(new BailErrorStrategy());
     }
     public void prepareStatementForXml(){
-        save.temp_text = statement_text.replaceAll("&","&amp").replaceAll("\n","&#10;");
+        this.temp_text = statement_text.replaceAll("&","&amp").replaceAll("\n","&#10;");
     }
     public void setupParserLLAndDefault(){
         tokens.seek(0);
@@ -456,13 +453,15 @@ public class ParserClass implements ANTLRErrorListener{
         parser.setBuildParseTree(false);
         parser.setErrorHandler(new DefaultErrorStrategy());
 
+        //delete
+        parser.setInterpreter(sim);
         // full now with full LL(*)
         parser.getInterpreter().setPredictionMode(PredictionMode.LL);
     }
     public void setupLexerAndParserLLAndDefault(){
         parser.reset();
         codePointCharStream = CharStreams.fromString(statement_text);
-        lexer = new Hello(codePointCharStream);
+        lexer = new Mssql_lexer(codePointCharStream);
 
         //remove cmd output for lexer
         lexer.removeErrorListener(ConsoleErrorListener.INSTANCE);
@@ -478,8 +477,8 @@ public class ParserClass implements ANTLRErrorListener{
     }
     public int convertRowColToPosition(int row, int col){
         int row_count = 1;
-        for(int i=0;i<save.statement_For_Parser.length();i++){
-            if(save.statement_For_Parser.charAt(i) == '\n'){
+        for(int i=0;i<this.statement_For_Parser.length();i++){
+            if(this.statement_For_Parser.charAt(i) == '\n'){
                 row_count++;
             }
             if(row_count == row){
@@ -487,7 +486,7 @@ public class ParserClass implements ANTLRErrorListener{
                     i++;
                 }
                 int char_index=0;
-                for(int j=i;j<save.statement_For_Parser.length()+1;j++){
+                for(int j=i;j<this.statement_For_Parser.length()+1;j++){
                     if(char_index == col){
                         return j;
                     }
@@ -500,15 +499,15 @@ public class ParserClass implements ANTLRErrorListener{
         return 0;
     }
     public void saveCorrectAndWrongXml() throws IOException, TransformerException, SAXException {
-        this.xml_handler.addToXML(save.wrong_statements,"preparsed_statements_wrongaa_delete_fourth"+this.number_help+".xml", save.wrong_Ids);
-        this.xml_handler_correct.addToXML(save.correct_statements,"preparsed_statements_correct_delete_fourth"+this.number_help+".xml", save.correct_Ids);
+        this.xml_handler.addToXML(this.wrong_statements,path+"_wrong"+this.number_help+".xml", this.wrong_Ids);
+        this.xml_handler_correct.addToXML(this.correct_statements,path+"_correct"+this.number_help+".xml", this.correct_Ids);
     }
     public void resetArrays(){
-        number_of_total_statements += save.wrong_statements.size();
-        save.wrong_statements = new ArrayList<>();
-        save.wrong_Ids = new ArrayList<>();
-        save.correct_statements = new ArrayList<>();
-        save.correct_Ids = new ArrayList<>();
+        number_of_total_statements += this.wrong_statements.size();
+        this.wrong_statements = new ArrayList<>();
+        this.wrong_Ids = new ArrayList<>();
+        this.correct_statements = new ArrayList<>();
+        this.correct_Ids = new ArrayList<>();
     }
     public void generateRepairPermutations(ArrayList<ArrayList<String>> lists, ArrayList<String> result, int depth, String current) {
         if (depth == lists.size()) {
@@ -521,35 +520,213 @@ public class ParserClass implements ANTLRErrorListener{
             generateRepairPermutations(lists, result, depth + 1, current + lists.get(depth).get(i)+";");
         }
     }
+    public void handleAdvancedRepairs(){
+        if(this.test_id == 10 && this.repair_Options.size() != 0){
+            this.ready_For_Parse = true;
+            repairPermutations = new ArrayList<>();
+            int size=1;
+            for(ArrayList<String> i : repair_Options){
+                size *= i.size();
+                if(size > 500){
+                    break;
+                }
+            }
+            //we want no more than 500 possible combinations of repairs
+            if(size <= 500) {
+                generateRepairPermutations(this.repair_Options, repairPermutations, 0, "");
+            }
+            positionsForRepair = new ArrayList<>();
+            for(String pos : this.repairRowAndCharpos){
+                String[] tempPos = pos.split(";");
+                positionsForRepair.add(convertRowColToPosition(Integer.parseInt(tempPos[0]),Integer.parseInt(tempPos[1])));
+            }
+            for(String repair : repairPermutations){
+                //try to modify statement and see if it was successful, if not try another
+                tryToRepair(repair);
+                if(this.isRepaired){
+                    break;
+                }
+            }
+            this.repair_Options = new ArrayList<>();
+            this.repairRowAndCharpos = new ArrayList<>();
+            this.ready_For_Parse = false;
+        }
+    }
+    public void clearHighDFA(){
+        if(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() >  3800000000L /*Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory() < 100000000*/){
+            System.out.println("DFA");
+            parser.getInterpreter().clearDFA();
+            lexer.getInterpreter().clearDFA();
+        }
+    }
+    public void tryToRepair(String repair){
+        ArrayList<Integer> updatedPositionsForRepair = new ArrayList<>(positionsForRepair);
+        int shiftIndex=0;
+        String[] temp_repair = repair.split(";");
+        StringBuilder repaired_statement = new StringBuilder(this.statement_For_Parser);
+        for(int i=0;i<temp_repair.length;i++){
+            repaired_statement.insert(updatedPositionsForRepair.get(i)," "+temp_repair[i]+" ");
+            for(int x=shiftIndex+1;x<updatedPositionsForRepair.size();x++){
+                updatedPositionsForRepair.set(x,updatedPositionsForRepair.get(x)+(new String(" "+temp_repair[i]+" ")).length());
+            }
+            shiftIndex++;
+        }
+        statement_text = repaired_statement.toString();
+
+        prepareStatementForXml();
+
+        if(statement_text.replaceAll("&#10;","\n").equals(this.statement_For_Parser)){
+            return;
+        }
+        setupLexerAndParserLLAndDefault();
+        this.repair_Helped = true;
+        tree = parser.tsql_file();
+
+        clearHighDFA();
+
+        if(this.repair_Helped){
+            System.out.print("Repaired ");
+            this.isRepaired = true;
+            this.repair_Helped = false;
+            if(temp_repair.length > 1){
+                System.out.print("Multiple repairs " + Arrays.toString(temp_repair));
+            }
+            if(Arrays.asList(temp_repair).contains(")") || Arrays.asList(temp_repair).contains("(")){
+                auto_brackets++;
+                System.out.print(" ) | ( ");
+            }
+            if(Arrays.asList(temp_repair).contains("BEGIN") || Arrays.asList(temp_repair).contains("END")){
+                auto_beginend++;
+                System.out.print(" BEGIN | END ");
+            }
+            if(Arrays.asList(temp_repair).contains(",") ){
+                auto_comma++;
+                System.out.print(" CARKA ");
+            }
+            if(Arrays.asList(temp_repair).contains("SET")){
+                auto_brackets2++;
+                System.out.print(" SET ");
+            }
+            System.out.println();
+        }
+    }
+    public void setupRepairsToLookFor(){
+        allowed_Repairs.add("(");
+        allowed_Repairs.add(")");
+        allowed_Repairs.add("BEGIN");
+        allowed_Repairs.add("END");
+        allowed_Repairs.add(",");
+        allowed_Repairs.add("SET");
+    }
+    public void parseAndSaveCorrectOrWrongStatement(){
+        try {
+            setupLexerAndParserSSLAndBail();
+            tree = parser.tsql_file();
+        } catch (ParseCancellationException p) {
+            if (!this.isVisited) {
+                setupParserLLAndDefault();
+                tree = parser.tsql_file();
+                //try to repair statement
+                handleAdvancedRepairs();
+            }
+        }
+
+        if (!this.isVisited || this.isRepaired) {
+            is_corrected++;
+            this.correct_statements.add(this.temp_text);
+            this.correct_Ids.add(Integer.parseInt(this.temp_id));
+            this.isRepaired = false;
+
+        } else {
+            if(this.test_id != 6 && this.test_id != 7 && this.test_id != 10) {
+                this.wrong_statements.add(this.temp_text);
+            }
+            else if (this.test_id == 10){
+                this.wrong_statements.add(this.statement_For_Parser.replaceAll("&","&amp").replaceAll("\n","&#10;"));
+            }
+            this.wrong_Ids.add(Integer.parseInt(this.temp_id));
+        }
+        clearHighDFA();
+
+        this.isVisited = false;
+
+    }
+    public void printResults(){
+        if(this.test_id == 1) {
+            System.out.println("FROM & FORM");
+
+            System.out.println("Nalezeno "+from_mistake);
+        }
+        if(this.test_id == 2) {
+            System.out.println("WHERE");
+
+            System.out.println("Nalezeno "+where_mistake);
+
+        }
+        if(this.test_id == 3) {
+            System.out.println("GROUP BY");
+
+            System.out.println("Nalezeno "+groupby_mistake);
+
+        }
+        if(this.test_id == 4) {
+            System.out.println("ORDER BY");
+
+            System.out.println("Nalezeno "+orderby_mistake);
+        }
+
+        if(this.test_id == 5) {
+            System.out.println("TOP FOR");
+
+            System.out.println("Nalezeno "+top_check);
+
+        }
+        if(this.test_id == 6) {
+            System.out.println("BRACKETS");
+
+            System.out.println("Nalezeno "+left_right_brackets);
+            left_right_brackets = 0;
+
+        }
+        if(this.test_id == 7) {
+            System.out.println("BRACKETS");
+            System.out.println("Nalezeno "+left_right_brackets);
+
+        }
+        if(this.test_id == 8){
+            System.out.println("COMMA INFRONT AS");
+            System.out.println("Nalezeno "+comma_infront_as);
+        }
+        if(this.test_id == 9){
+            System.out.println("COMMA INFRONT BRACKET");
+            System.out.println("Nalezeno "+comma_infront_bracket);
+        }
+        if(this.test_id == 10){
+            System.out.println("Zavorky "+auto_brackets);
+            System.out.println("BEGIN|END "+auto_beginend);
+            System.out.println("CARKA "+auto_comma);
+            System.out.println("SET "+auto_brackets2);
+        }
+        System.out.println("Spravnych "+is_corrected);
+        is_corrected = 0;
+
+        System.out.println("CELKEM prikazu: "+number_of_total_statements);
+        number_of_total_statements = 0;
+    }
     public void run() throws Exception {
         try {
             BufferedReader read;
             if(this.test_id == 0) {
-                read = new BufferedReader(new FileReader("preparsed_statements_withid_final1_updated_8.xml"));
+                //preparsed_statements_withid_final1_updated_8.xml
+                read = new BufferedReader(new FileReader(path+".xml"));
             }
             else{
-                read = new BufferedReader(new FileReader("preparsed_statements_wrongaa"+this.test_id+".xml"));
+                //preparsed_statements_wrongaa
+                read = new BufferedReader(new FileReader(path+"_wrong"+this.test_id+".xml"));
             }
-
             String line="";
             StringBuilder leftOver_line= new StringBuilder();
-
-
             long startTime = System.currentTimeMillis();
-
-            int is_corrected = 0;
-            int auto_brackets = 0;
-            int auto_beginend = 0;
-            int auto_comma = 0;
-            int auto_brackets2 = 0;
-
-            allowed_Repairs.add("(");
-            allowed_Repairs.add(")");
-            allowed_Repairs.add("BEGIN");
-            allowed_Repairs.add("END");
-            allowed_Repairs.add(",");
-            allowed_Repairs.add("SET");
-
 
             while((line=read.readLine())!=null){
                 if(line.contains("<statement") && !line.contains("<statements>") && line.contains("</statement>")){
@@ -557,351 +734,126 @@ public class ParserClass implements ANTLRErrorListener{
                         line=leftOver_line+line;
                     }
                     getIdAndText(line);
-
+                    if(this.temp_id.equals("1033246")){
+                        System.out.println("AA");
+                    }
                     executeTestModification();
-
-                    if(statement_text == null){
-                        break;
-                    }
-
-                    setupLexerAndParserSSLAndBail();
-
-                    isAlreadyWritten = false;
-
-
                     prepareStatementForXml();
-
-
-
-                    if(Integer.parseInt(save.temp_id) > 36576920 && Integer.parseInt(save.temp_id) != 3454268 && Integer.parseInt(save.temp_id) != 11636147 && Integer.parseInt(save.temp_id) != 11670234 && Integer.parseInt(save.temp_id) != 28905401) {
+                    if(Integer.parseInt(this.temp_id) > 0 /*&& Integer.parseInt(this.temp_id) != 3454268 && Integer.parseInt(this.temp_id) != 11636147 && Integer.parseInt(this.temp_id) != 11670234 && Integer.parseInt(this.temp_id) != 28905401*/) {
                         if (statement_Modified) {
-                            try {
-                                if(save.temp_id.equals("1262941")){
-                                    System.out.println("A");
-                                }
-                                tree = parser.tsql_file();
-                            } catch (ParseCancellationException p) {
-                                if (!save.isVisited) {
-                                   setupParserLLAndDefault();
-                                    tree = parser.tsql_file();
-                                    if(this.test_id == 10 && this.repair_Options.size() != 0){
-                                        save.ready_For_Parse = true;
-                                        repairPermutations = new ArrayList<>();
-                                        int size=1;
-                                        for(ArrayList<String> i : repair_Options){
-                                            size *= i.size();
-                                            if(size > 500){
-                                                break;
-                                            }
-                                        }
-                                        if(size <= 500) {
-                                            generateRepairPermutations(this.repair_Options, repairPermutations, 0, "");
-                                        }
-                                        positionsForRepair = new ArrayList<>();
-                                        for(String pos : this.repairRowAndCharpos){
-                                            String[] tempPos = pos.split(";");
-                                            positionsForRepair.add(convertRowColToPosition(Integer.parseInt(tempPos[0]),Integer.parseInt(tempPos[1])));
-                                        }
-                                        for(String repair : repairPermutations){
-                                            ArrayList<Integer> updatedPositionsForRepair = new ArrayList<>(positionsForRepair);
-                                            int shiftIndex=0;
-                                            String[] temp_repair = repair.split(";");
-                                            StringBuilder repaired_statement = new StringBuilder(save.statement_For_Parser);
-                                            for(int i=0;i<temp_repair.length;i++){
-                                                repaired_statement.insert(updatedPositionsForRepair.get(i)," "+temp_repair[i]+" ");
-                                                for(int x=shiftIndex+1;x<updatedPositionsForRepair.size();x++){
-                                                    updatedPositionsForRepair.set(x,updatedPositionsForRepair.get(x)+(new String(" "+temp_repair[i]+" ")).length());
-                                                }
-                                                shiftIndex++;
-                                            }
-                                            statement_text = repaired_statement.toString();
-
-                                            prepareStatementForXml();
-
-                                            if(statement_text.replaceAll("&#10;","\n").equals(save.statement_For_Parser)){
-                                                break;
-                                            }
-                                            setupLexerAndParserLLAndDefault();
-                                            save.repair_Helped = true;
-                                            tree = parser.tsql_file();
-
-                                            if(statement_text.length() > 15000 || Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() > 1500000000 /*Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory() < 100000000*/){
-                                                parser.getInterpreter().clearDFA();
-                                                lexer.getInterpreter().clearDFA();
-                                            }
-
-                                            if(save.repair_Helped){
-                                                System.out.print("Repaired ");
-                                                save.isRepaired = true;
-                                                save.repair_Helped = false;
-                                                if(temp_repair.length > 1){
-                                                    System.out.print("Multiple repairs " + Arrays.toString(temp_repair));
-                                                }
-                                                if(Arrays.asList(temp_repair).contains(")") || Arrays.asList(temp_repair).contains("(")){
-                                                    auto_brackets++;
-                                                    System.out.print(" ) | ( ");
-                                                }
-                                                if(Arrays.asList(temp_repair).contains("BEGIN") || Arrays.asList(temp_repair).contains("END")){
-                                                    auto_beginend++;
-                                                    System.out.print(" BEGIN | END ");
-                                                }
-                                                if(Arrays.asList(temp_repair).contains(",") ){
-                                                    auto_comma++;
-                                                    System.out.print(" CARKA ");
-                                                }
-                                                if(Arrays.asList(temp_repair).contains("SET")){
-                                                    auto_brackets2++;
-                                                    System.out.print(" SET ");
-                                                }
-                                                System.out.println();
-                                                break;
-                                            }
-                                        }
-                                        this.repair_Options = new ArrayList<>();
-                                        this.repairRowAndCharpos = new ArrayList<>();
-                                        save.ready_For_Parse = false;
-                                    }
-                                }
-                            }
-
-                            if (!save.isVisited || save.isRepaired) {
-                                is_corrected++;
-                                save.correct_statements.add(save.temp_text);
-                                save.correct_Ids.add(Integer.parseInt(save.temp_id));
-                                save.isRepaired = false;
-
-                            } else {
-                                if(this.test_id != 6 && this.test_id != 7 && this.test_id != 10) {
-                                    save.wrong_statements.add(save.temp_text);
-                                }
-                                else if (this.test_id == 10){
-                                    save.wrong_statements.add(save.statement_For_Parser.replaceAll("&","&amp").replaceAll("\n","&#10;"));
-                                }
-                                save.wrong_Ids.add(Integer.parseInt(save.temp_id));
-                            }
+                            parseAndSaveCorrectOrWrongStatement();
                         } else {
-                            save.wrong_statements.add(save.temp_text);
-                            save.wrong_Ids.add(Integer.parseInt(save.temp_id));
+                            this.wrong_statements.add(this.temp_text);
+                            this.wrong_Ids.add(Integer.parseInt(this.temp_id));
                         }
-
                     }
-                    if(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() > 1500000000 /*Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory() < 100000000*/){
-                        parser.getInterpreter().clearDFA();
-                        lexer.getInterpreter().clearDFA();
-                    }
-
-                    save.isVisited = false;
-
                     leftOver_line = new StringBuilder();
                 }
                 else if(!line.contains("<statements>") && !line.contains("</statements>")){
-                    System.out.println("SOMETHING WRONG");
                     leftOver_line.append(line);
                 }
 
-                if(save.wrong_statements.size()  > 1000){
+                if(this.wrong_statements.size()  > 1000){
                     saveCorrectAndWrongXml();
-
                     resetArrays();
+
                     long endTime = System.currentTimeMillis();
-
-
                     System.out.println(
                             "Time : "
                                     + (endTime - startTime) + " ms");
-
                     startTime = System.currentTimeMillis();
-
-
                 }
             }
-            if(save.wrong_statements.size() > 0){
+            if(this.wrong_statements.size() > 0 || this.correct_statements.size() > 0){
                 saveCorrectAndWrongXml();
-
                 resetArrays();
             }
             read.close();
-
-
-            if(this.test_id == 1) {
-                System.out.println("FROM & FORM");
-
-                System.out.println(from_mistake);
-            }
-            if(this.test_id == 2) {
-                System.out.println("WHERE");
-
-                System.out.println(where_mistake);
-
-            }
-            if(this.test_id == 3) {
-                System.out.println("GROUP BY");
-
-                System.out.println(groupby_mistake);
-
-            }
-            if(this.test_id == 4) {
-                System.out.println("ORDER BY");
-
-                System.out.println(orderby_mistake);
-            }
-
-            if(this.test_id == 5) {
-                System.out.println("TOP FOR");
-
-                System.out.println(top_check);
-
-            }
-            if(this.test_id == 6) {
-                System.out.println("BRACKETS");
-
-                System.out.println(left_right_brackets);
-                left_right_brackets = 0;
-
-            }
-            if(this.test_id == 7) {
-                System.out.println("BRACKETS");
-                System.out.println(left_right_brackets);
-
-            }
-            if(this.test_id == 8){
-                System.out.println("COMMA INFRONT AS");
-                System.out.println(comma_infront_as);
-            }
-            if(this.test_id == 9){
-                System.out.println("COMMA INFRONT BRACKET");
-                System.out.println(comma_infront_bracket);
-            }
-            if(this.test_id == 10){
-                System.out.println(auto_brackets);
-                System.out.println(auto_beginend);
-                System.out.println(auto_comma);
-                System.out.println(auto_brackets2);
-            }
-            System.out.println("Spravnych "+is_corrected);
-            is_corrected = 0;
-
-            System.out.println("CELKEM prikazu: "+number_of_total_statements);
-            number_of_total_statements = 0;
+            printResults();
 
             this.test_id+=1;
             if(test_id == 11){
                 return;
             }
-            ParserClass p = new ParserClass(this.test_id);
+            //run again to try another repair if possible
+            ParserClass p = new ParserClass(this.test_id, path);
             p.run();
 
         }
         catch (Exception e){
             e.printStackTrace();
         }
-
-
-
-
     }
+    public void findAndSaveAllowedRepairs(String s, int i, int i1){
+        String options;
+        if(s.contains("{") && s.contains("}")) {
+            options = StringUtils.substringBetween(s, "{", "}");
+        }
+        else{
+            int index = s.indexOf("expecting");
+            String temp_string = s.substring(index);
+            options = StringUtils.substringBetween(temp_string, "'", "'");
+            options = "'"+options+"'";
+        }
+        if(options != null) {
+            checkAndSaveRepairs(options,i,i1);
+        }
+    }
+    public void checkAndSaveRepairs(String options, int i, int i1){
+        ArrayList<String> final_List = new ArrayList<>();
+        for(String repair : this.allowed_Repairs){
+            if(options.contains("'"+repair+"'")){
+                final_List.add(repair);
+            }
+        }
+        if (final_List.size() != 0) {
+            //add "nothing" to repair options
+            final_List.add("");
+            this.repair_Options.add(final_List);
+            this.repairRowAndCharpos.add(i+";"+i1);
+        }
+    }
+    public void findAndSaveAllowedRepairMissing(String s, int i, int i1){
+        String options;
+        int index = s.indexOf("missing");
+        if(index != -1) {
+            int index_end = s.indexOf("at");
+            String temp_string = s.substring(index, index_end);
+            if(s.contains("{") && s.contains("}")) {
+                options = StringUtils.substringBetween(s, "{", "}");
+            }
+            else {
+                options = StringUtils.substringBetween(temp_string, "'", "'");
+                options = "'"+options+"'";
+            }
+
+            if(options != null) {
+                checkAndSaveRepairs(options,i,i1);
+            }
+        }
+    }
+
 
     @Override
     public void syntaxError(Recognizer<?, ?> recognizer, Object o, int i, int i1, String s, RecognitionException e) {
-        if (!save.isVisited || (this.test_id == 10 && !save.isRepaired && !save.ready_For_Parse)) {
-            save.repair_Helped = false;
-            if(s.toString().contains("mismatched")){
-                String options;
-                if(s.contains("{") && s.contains("}")) {
-                    options = StringUtils.substringBetween(s, "{", "}");
-                }
-                else{
-                    int index = s.indexOf("expecting");
-                    String temp_string = s.substring(index,s.length());
-                    options = StringUtils.substringBetween(temp_string, "'", "'");
-                }
-                if(options != null) {
-                    ArrayList<String> final_List = new ArrayList<>();
-                    //pridat repairs pokud jich je méně než 10
-                    for(String repair : this.allowed_Repairs){
-                        if(options.contains("'"+repair+"'")){
-                            final_List.add(repair);
-                        }
-                    }
-
-                    if (final_List.size() != 0) {
-                        final_List.add("");
-                        this.repair_Options.add(final_List);
-                        this.repairRowAndCharpos.add(i+";"+i1);
-                    }
-                }
-
-                if(this.repair_Options == null ){
-                    //System.out.println("WRONG");
-                }
-                //this.repair_row = i;
-                //this.repair_charpos = i1;
-
+        if (!this.isVisited || (this.test_id == 10 && !this.isRepaired && !this.ready_For_Parse)) {
+            this.repair_Helped = false;
+            if(s.contains("mismatched")){
+                findAndSaveAllowedRepairs(s,i,i1);
             }
-            if(s.toString().contains("extraneous")){
-
-                String options;
-                if(s.contains("{") && s.contains("}")) {
-                    options = StringUtils.substringBetween(s, "{", "}");
-                }
-                else{
-                    int index = s.indexOf("expecting");
-                    String temp_string = s.substring(index,s.length());
-                    options = StringUtils.substringBetween(temp_string, "'", "'");
-                }
-                if(options != null) {
-                    ArrayList<String> final_List = new ArrayList<>();
-                    //pridat repairs pokud jich je méně než 10
-                    for(String repair : this.allowed_Repairs){
-                        if(options.contains("'"+repair+"'")){
-                            final_List.add(repair);
-                        }
-                    }
-
-                    if (final_List.size() != 0) {
-                        final_List.add("");
-                        this.repair_Options.add(final_List);
-                        this.repairRowAndCharpos.add(i+";"+i1);
-                    }
-                }
-
-                if(this.repair_Options == null ){
-                    //System.out.println("WRONG");
-                }
-                //this.repair_row = i;
-                //this.repair_charpos = i1;
-
-
-
+            if(s.contains("extraneous")){
+                findAndSaveAllowedRepairs(s,i,i1);
             }
-            if(s.toString().contains("missing") && !s.contains("no viable alternative")){
-                String options;
-                int index = s.indexOf("missing");
-                if(index != -1) {
-                    int index_end = s.indexOf("at");
-                    String temp_string = s.substring(index, index_end);
-                    options = StringUtils.substringBetween(temp_string, "'", "'");
-                    if (Objects.equals(options, "(") || Objects.equals(options, ")") || Objects.equals(options, "BEGIN") || Objects.equals(options, "END") || Objects.equals(options, ",")) {
-                        ArrayList<String> final_List = new ArrayList<>(List.of(options));
-                        final_List.add("");
-                        this.repair_Options.add(final_List);
-                        //this.repair_row = i;
-                        //this.repair_charpos = i1;
-                        this.repairRowAndCharpos.add(i+";"+i1);
-                    }
-                }
+            if(s.contains("missing") && !s.contains("no viable alternative")){
+                findAndSaveAllowedRepairMissing(s,i,i1);
             }
-
-            save.isVisited = true;
-
+            this.isVisited = true;
             if(this.test_id == 6 || this.test_id == 7){
-                save.wrong_statements.add(save.original_statement);
+                this.wrong_statements.add(this.original_statement);
             }
-
-            isAlreadyWritten = true;
         }
         else{
-            save.repair_Helped = false;
+            this.repair_Helped = false;
         }
     }
 
