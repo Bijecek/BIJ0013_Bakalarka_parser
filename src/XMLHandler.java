@@ -13,7 +13,7 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.util.ArrayList;
 
-public class XML_handler {
+public class XMLHandler {
     private DocumentBuilder documentBuilder;
     private Document doc;
     private Node root;
@@ -22,7 +22,8 @@ public class XML_handler {
     private Transformer transformer;
     private File f_tmp;
     private File f;
-    public XML_handler(String output) throws ParserConfigurationException, IOException, SAXException, TransformerException {
+
+    public XMLHandler(String output) throws ParserConfigurationException, IOException, SAXException, TransformerException {
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         this.documentBuilder = documentBuilderFactory.newDocumentBuilder();
 
@@ -40,10 +41,11 @@ public class XML_handler {
 
 
         this.doc = this.documentBuilder.parse(output);
-        this.root=this.doc.getFirstChild();
+        this.root = this.doc.getFirstChild();
         this.f = new File(output);
 
     }
+
     public void addToXML(ArrayList<String> text, String path, ArrayList<Integer> id) throws IOException, SAXException, TransformerException {
         this.transformerFactory = TransformerFactory.newInstance();
         this.transformer = this.transformerFactory.newTransformer(new StreamSource(this.f_tmp.getAbsolutePath()));
@@ -51,9 +53,9 @@ public class XML_handler {
         this.transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
 
-        int index=0;
-        for(String i : text){
-            this.newserver=this.doc.createElement("statement");
+        int index = 0;
+        for (String i : text) {
+            this.newserver = this.doc.createElement("statement");
             this.newserver.setTextContent(i);
             this.root.appendChild(this.newserver);
             this.newserver.setAttribute("id", String.valueOf(id.get(index)));
@@ -61,7 +63,6 @@ public class XML_handler {
         }
 
         this.transformer.transform(new DOMSource(this.doc), new StreamResult(f.getAbsolutePath()));
-
 
 
         this.newserver = null;

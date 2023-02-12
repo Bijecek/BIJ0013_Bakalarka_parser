@@ -15,7 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.xml.sax.SAXException;
 
 public class PreloadClass {
-    XML_handler xml_handler;
+    XMLHandler xml_handler;
 
     Set<Integer> questions_ID = new HashSet<>();
 
@@ -64,10 +64,11 @@ public class PreloadClass {
     String[] text_without_comments = null;
 
     public PreloadClass(String input, String output) throws ParserConfigurationException, IOException, TransformerException, SAXException {
-        this.xml_handler = new XML_handler(output);
+        this.xml_handler = new XMLHandler(output);
         //C:\Users\sisin\Downloads\Posts.7z
         this.sevenZFile = new SevenZFile(new File(input));
     }
+
     public void getInfoFromXmlFile() throws IOException, SAXException {
         parentHasExpectedFlags = false;
 
@@ -77,7 +78,7 @@ public class PreloadClass {
 
         tags = doc.getDocumentElement().getAttribute("Tags");
         positive_Tags = tags.contains("sql-server") || tags.contains("mssql") || tags.contains("ms-sql-server") || tags.contains("sql-srever") || tags.contains("tsql");
-        negative_Tags = tags.contains("linq") || tags.contains("coldfusion") || tags.contains("db2") || tags.contains("oracle") ||tags.contains("mdx") ||tags.contains("postgresql") || tags.contains("mysql") || tags.contains("cfml") || tags.contains("linq-to-sql") || tags.contains("vbscript") || tags.contains(".net") || tags.contains("c++") || tags.contains("ado") || tags.contains("ms-access") || tags.contains("vba") || tags.contains("asp-classic") || tags.contains("c%23") || tags.contains("c#") || tags.contains("php") || tags.contains("xml") || tags.contains("java") || tags.contains("python");
+        negative_Tags = tags.contains("linq") || tags.contains("coldfusion") || tags.contains("db2") || tags.contains("oracle") || tags.contains("mdx") || tags.contains("postgresql") || tags.contains("mysql") || tags.contains("cfml") || tags.contains("linq-to-sql") || tags.contains("vbscript") || tags.contains(".net") || tags.contains("c++") || tags.contains("ado") || tags.contains("ms-access") || tags.contains("vba") || tags.contains("asp-classic") || tags.contains("c%23") || tags.contains("c#") || tags.contains("php") || tags.contains("xml") || tags.contains("java") || tags.contains("python");
         q_a_id = Integer.parseInt(doc.getDocumentElement().getAttribute("Id"));
         question_answer_ID = doc.getDocumentElement().getAttribute("PostTypeId");
 
@@ -88,40 +89,45 @@ public class PreloadClass {
             }
         }
     }
-    public String removeComments(String currentLine){
-        currentLine = removeSpecificComment(currentLine,"---","\n");
-        currentLine = removeSpecificComment(currentLine,"--","\n");
-        currentLine = removeSpecificComment(currentLine,"--","</statement>");
-        currentLine = removeSpecificComment(currentLine,"/*","*/");
+
+    public String removeComments(String currentLine) {
+        currentLine = removeSpecificComment(currentLine, "---", "\n");
+        currentLine = removeSpecificComment(currentLine, "--", "\n");
+        currentLine = removeSpecificComment(currentLine, "--", "</statement>");
+        currentLine = removeSpecificComment(currentLine, "/*", "*/");
         return currentLine;
 
     }
-    public String removeSpecificComment(String currentLine, String commentType, String closureType){
-        if(currentLine.contains(commentType)) {
+
+    public String removeSpecificComment(String currentLine, String commentType, String closureType) {
+        if (currentLine.contains(commentType)) {
             text_without_comments = StringUtils.substringsBetween(currentLine, commentType, closureType);
-            if(text_without_comments != null && text_without_comments.length > 0) {
+            if (text_without_comments != null && text_without_comments.length > 0) {
                 Arrays.sort(text_without_comments, Comparator.comparingInt(String::length).reversed());
                 for (String tmp : text_without_comments) {
-                    currentLine = currentLine.replace(commentType+tmp+closureType,"\n");
+                    currentLine = currentLine.replace(commentType + tmp + closureType, "\n");
                 }
             }
         }
         return currentLine;
     }
-    public String prepareStatementForXml(String currentLine){
+
+    public String prepareStatementForXml(String currentLine) {
         currentLine = currentLine.replaceAll("&gt;", ">").replaceAll("&lt;", "<");
         currentLine = currentLine.replaceAll("\n", "&#10;");
         return currentLine;
     }
-    public String replaceMostCommonUnicodeChars(String currentLine){
+
+    public String replaceMostCommonUnicodeChars(String currentLine) {
         currentLine = currentLine.replaceAll("‘", "'");
         currentLine = currentLine.replaceAll("’", "'");
         currentLine = currentLine.replaceAll("′", "'");
-        currentLine = currentLine.replaceAll("…","...");
+        currentLine = currentLine.replaceAll("…", "...");
         currentLine = currentLine.replaceAll("\\P{Print}", "undef");
         return currentLine;
     }
-    public void modifyAndSaveOrDiscardStatement(){
+
+    public void modifyAndSaveOrDiscardStatement() {
         if (text != null && text.length > 0) {
             for (String txt : text) {
                 //this condition ensures that we won't catch and work with something like this = "We are selecting..... FROM"
@@ -144,6 +150,7 @@ public class PreloadClass {
             }
         }
     }
+
     public void readAllLinesFromChunkOfData() throws IOException, SAXException {
         while ((line = reader.readLine()) != null) {
 
@@ -167,6 +174,7 @@ public class PreloadClass {
         //close BufferedReader
         reader.close();
     }
+
     public void run() throws Exception {
         try {
 
@@ -180,10 +188,10 @@ public class PreloadClass {
             long endTime;
 
             //read by 50 MB
-            while(sevenZFile.read(bytes,0,length_read) != -1) {
-                    bytes_temp = new String(bytes);
-                    bytes = new byte[50000000];
-                    bytes_str = bytes_str.concat(bytes_temp);
+            while (sevenZFile.read(bytes, 0, length_read) != -1) {
+                bytes_temp = new String(bytes);
+                bytes = new byte[50000000];
+                bytes_str = bytes_str.concat(bytes_temp);
 
                 //initialize BufferedReader by our line
                 reader = new BufferedReader(new StringReader(bytes_str));
@@ -193,10 +201,10 @@ public class PreloadClass {
                 readAllLinesFromChunkOfData();
 
 
-                if(passed_Statements.size() > 10000 || length_read == 41935589){
+                if (passed_Statements.size() > 10000 || length_read == 41935589) {
                     endTime = System.currentTimeMillis();
                     //save our statements to file
-                    xml_handler.addToXML(passed_Statements,"preparsed_statements_withid_final1_updated_8.xml",passed_IDs);
+                    xml_handler.addToXML(passed_Statements, "preparsed_statements_withid_final1_updated_8.xml", passed_IDs);
                     passed_Statements = new ArrayList<String>();
                     passed_IDs = new ArrayList<Integer>();
                     System.out.println(
@@ -204,7 +212,7 @@ public class PreloadClass {
                                     + (endTime - startTime) + " ms");
                     startTime = System.currentTimeMillis();
                 }
-                if(sevenZFile.getStatisticsForCurrentEntry().getUncompressedCount() == Long.parseLong("98400000000")){
+                if (sevenZFile.getStatisticsForCurrentEntry().getUncompressedCount() == Long.parseLong("98400000000")) {
                     length_read = 41935589;
                     bytes = new byte[41935589];
                 }
