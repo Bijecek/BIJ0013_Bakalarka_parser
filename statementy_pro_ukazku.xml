@@ -1,0 +1,10 @@
+<statement id="1">SELECT A,B, FROM c</statement>
+<statement id="2">SELECT A,B, FROM c, WHERE a = 0</statement>
+<statement id="3">SELECT A,B FROM c WHERE a = 0 GROUP a</statement>
+<statement id="4">SELECT A,B FROM c WHERE a = 0 GROUP BY a ORDER c</statement>
+<statement id="5">SELECT TOP 1 FROM C</statement>
+<statement id="6">SELECT TOP (1 * FROM C</statement>
+<statement id="7">SELECT (SELECT a from (SELECT a from b) FROM c</statement>
+<statement id="8">CREATE PROCEDURE People_Select @LastName   nvarchar(25)    = NULL, AS BEGIN SELECT a FROM b END</statement>
+<statement id="9">SELECT (SELECT a FROM b,) FROM C</statement>
+<statement id="10">@RespondentFilters = '''''); SELECT * FROM User; /*'</statement>
