@@ -98,4 +98,36 @@ public class XMLHandler {
         bw.close();
 
     }
+    public void saveSummaryResults(String wrongFile, ArrayList<String> testCombinations, ArrayList<Integer> numberOfResults) throws IOException {
+        int i =0;
+        BufferedWriter bw = new BufferedWriter(new FileWriter(this.outputFile,true));
+        for(String s : testCombinations){
+            bw.write("Test "+s + " Number of successful repairs: "+numberOfResults.get(i));
+            bw.newLine();
+            i++;
+        }
+        bw.close();
+        int totalRepaired = 0;
+        for(int num : numberOfResults){
+            totalRepaired+=num;
+        }
+        int totalStatementsToRepair = 0;
+        BufferedReader read = new BufferedReader(new FileReader(wrongFile + "_wrong0.xml"));
+        String line;
+        while ((line = read.readLine()) != null) {
+            if(line.contains("<statement id")){
+                totalStatementsToRepair++;
+            }
+        }
+        read.close();
+        bw = new BufferedWriter(new FileWriter(this.outputFile,true));
+        bw.write("------------------------------------");
+        bw.newLine();
+        bw.write("Repaired "+totalRepaired+" statements of total "+totalStatementsToRepair+" statements");
+        bw.newLine();
+        bw.write("Which is "+(((float)totalRepaired*100)/(float)totalStatementsToRepair)+" % success rate");
+        bw.newLine();
+        bw.write("------------------------------------");
+        bw.close();
+    }
 }

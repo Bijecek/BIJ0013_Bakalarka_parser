@@ -72,8 +72,6 @@ public class ParserClass implements ANTLRErrorListener {
     private boolean repairHelped = true;
     private boolean isVisited = false;
 
-    private int totalStatementsToRepair=0;
-
     private RepairsAndModifications repair = new RepairsAndModifications();
 
 
@@ -415,10 +413,8 @@ public class ParserClass implements ANTLRErrorListener {
             this.allWrongRepairs.add(this.allRepairs.get(0));
             this.allRepairs.remove(0);
             this.wrongIds.add(Integer.parseInt(this.statementId));
-            if(this.testId == 0){
-                totalStatementsToRepair++;
-            }
         }
+
         clearHighDFA();
 
         this.isVisited = false;
@@ -433,6 +429,7 @@ public class ParserClass implements ANTLRErrorListener {
             } else {
                 read = new BufferedReader(new FileReader(path + "_wrong" + (this.testId - 1) + ".xml"));
             }
+            System.out.println("Test"+this.testId+" launched");
             String line;
             //reading line by line
             while ((line = read.readLine()) != null) {
@@ -450,7 +447,6 @@ public class ParserClass implements ANTLRErrorListener {
                             this.wrongRepairsDone.add(false);
                             this.allWrongRepairs.add(this.allRepairs.get(0));
                             this.allRepairs.remove(0);
-
                         }
                     }
                 }
@@ -474,7 +470,6 @@ public class ParserClass implements ANTLRErrorListener {
             if (testId == 12) {
                 return;
             }
-            System.out.println("Test"+this.testId+" launched");
             //run again to try another repair if possible
             ParserClass p = new ParserClass(this.testId, path);
             p.run();
@@ -536,7 +531,7 @@ public class ParserClass implements ANTLRErrorListener {
             }
         }
     }
-    public void calculateFinalResults() throws IOException {
+    public void calculateFinalResults(String file) throws IOException {
         BufferedReader read;
         read = new BufferedReader(new FileReader(path + "_repaired.txt"));
         String line;
@@ -553,20 +548,9 @@ public class ParserClass implements ANTLRErrorListener {
                 numberOfResults.set(index,numberOfResults.get(index)+1);
             }
         }
-        int i =0;
-        for(String s : testCombinations){
-            System.out.println("Test "+s + " Pocet uspesnych oprav: "+numberOfResults.get(i));
-            i++;
-        }
-        int totalRepaired = 0;
-        for(int num : numberOfResults){
-            totalRepaired+=num;
-        }
-        System.out.println("------------------------------------");
-        System.out.println("Celkem opraveno "+totalRepaired+" prikazu z celkovych "+totalStatementsToRepair);
-        System.out.println("Coz je "+(((float)totalRepaired*100)/(float)totalStatementsToRepair)+" % uspesnost");
-        System.out.println("------------------------------------");
         read.close();
+        XMLHandler saveSummary = new XMLHandler(file+".txt",false);
+        saveSummary.saveSummaryResults(path,testCombinations,numberOfResults);
     }
 
 
