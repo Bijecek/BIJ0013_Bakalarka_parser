@@ -257,7 +257,7 @@ public class RepairsAndModifications {
         statementModified = true;
     }
 
-    //test 11 - remove dots and wrap all @xxx using [ and ] brackets
+    //test 11 - remove dots, replace comments and wrap all @xxx using [ and ] brackets
     public void test11RemoveDots() {
         String statementUpdated = statementText.replaceAll("\\.\\.\\.", "").replaceAll("\\. \\. \\.", "").replaceAll("==", "=").replaceAll("//", "--");
         if (!statementText.equals(statementUpdated)) {

@@ -208,7 +208,6 @@ public class PreloadClass {
             //read by chunks of data
             while (sevenZFile.read(bytes, 0, lengthRead) != -1) {
 
-                //odkomentovat
                 bytesString = bytesString.concat(new String(bytes));
                 bytes = new byte[lengthRead];
 
@@ -234,7 +233,7 @@ public class PreloadClass {
                 //save our statements to file
                 xmlHandler.addToXML(passedStatements, passedIds,null,null,0);
             }
-            System.out.println("Finished");
+            System.out.println("Finished preParsing");
 
             sevenZFile.close();
         } catch (Exception e) {
