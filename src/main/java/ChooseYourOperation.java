@@ -12,15 +12,13 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Scanner;
 
 import static java.lang.System.exit;
 
 public class ChooseYourOperation {
-    private final String ANSI_RED_BACKGROUND = "\033[41m";
-    private final String ANSI_RESET = "\033[0m";
-
     private int executeNumber=0;
     private String[] arguments;
     private int argumentIndex=0;
@@ -29,6 +27,8 @@ public class ChooseYourOperation {
 
     String summaryFile;
     String preParsePath;
+    ArrayList<String> positiveTags = new ArrayList<>();
+    ArrayList<String> negativeTags = new ArrayList<>();
 
 
     public ChooseYourOperation(String[] args) throws Exception {
@@ -42,7 +42,7 @@ public class ChooseYourOperation {
             exit(1);
         }
         int requiredArguments = checkNumberOfRequiredArguments(this.arguments);
-        if(requiredArguments != this.arguments.length-1) {
+        if(requiredArguments > this.arguments.length-1) {
             System.out.println("Invalid number of arguments, use -help");
             exit(1);
         }
@@ -54,7 +54,7 @@ public class ChooseYourOperation {
         boolean preloadRan = preParseOperation();
         boolean parseRan = parseOperations(preloadRan);
         if(preloadRan){
-            PreloadClass preload = new PreloadClass(preParsePath, fileToGenerateOutputToPreParse);
+            PreloadClass preload = new PreloadClass(preParsePath, fileToGenerateOutputToPreParse, positiveTags, negativeTags);
             preload.run();
         }
         if(parseRan){
@@ -68,13 +68,23 @@ public class ChooseYourOperation {
         //-PP C:\Users\sisin\Downloads\Posts.7z DeletemeLater -OW -PO -SF vysledky_delete -OW
         System.out.println("HELP menu:");
         System.out.println("The arguments you are looking for may be listed below:");
-        System.out.println("java -Xmx4096M -jar target/B_tmp-1.0-SNAPSHOT.jar -PP pathTo7zFile nameOfFile -OW -PO -SF myResults -OW");
+        System.out.println("--");
+        System.out.println("java -Xmx4096M -jar target/B_tmp-1.0-SNAPSHOT.jar -PP pathTo7zFile\n" +
+                "nameOfFile -OW -A sql-server tsql -R linq coldfusion db2 oracle mdx postgresql mysql\n" +
+                "cfml linq-to-sql vbscript .net c++ ado ms-access vba asp-classic c# php java python ruby\n" +
+                "-PO -SF myResults -OW");
+        System.out.println("--");
         System.out.println("java -Xmx4096M -jar target/B_tmp-1.0-SNAPSHOT.jar -noPP -PO nameOfFile -EA myResults -OW");
-        System.out.println("java -Xmx4096M -jar target/B_tmp-1.0-SNAPSHOT.jar -PP pathTo7zFile nameOfFile -OW -noPO");
+        System.out.println("--");
+        System.out.println("java -Xmx4096M -jar target/B_tmp-1.0-SNAPSHOT.jar -PP pathTo7zFile\n" +
+                "nameOfFile -OW -A sql-server tsql -R linq coldfusion db2 oracle mdx postgresql mysql\n" +
+                "cfml linq-to-sql vbscript .net c++ ado ms-access vba asp-classic c# php java python ruby\n" +
+                "-noPO");
+        System.out.println("--");
         System.out.println();
         System.out.println("[-PP|-noPP]\n" +
-                "-PP -> [-PP pathTo7zFile nameOfFile [-OW|-noOW] [-PO|-noPO]]\n" +
-                "-PO -> [-PP pathTo7zFile nameOfFile [-OW|-noOW] -PO [-SF|nameOfFile [-EA|-noEA]] nameOfResultsFile [-OW|-noOW]]\n" +
+                "-PP -> [-PP pathTo7zFile nameOfFile [-OW|-noOW] [-A -R] [-PO|-noPO]]\n" +
+                "-PO -> [-PP pathTo7zFile nameOfFile [-OW|-noOW] [-A -R] -PO [-SF|nameOfFile [-EA|-noEA]] nameOfResultsFile [-OW|-noOW]]\n" +
                 "-noPP -> [-noPP -PO nameOfFile [-EA|-noEA] nameOfResultsFile [-OW|-noOW]]\n");
         System.out.println();
         System.out.println("-PP or -noPP   NOTE: -PP option enables to preload some data from StackOverflow" +
@@ -85,6 +95,9 @@ public class ChooseYourOperation {
         System.out.println("    pathTo7zFile   NOTE: Provide full path to your .7z file that you want to process, for example C:\\Users\\MyPc\\Posts.7z" );
         System.out.println("---");
         System.out.println("    nameOfFile   NOTE: Choose name of the file that will be created in working directory" );
+        System.out.println("---");
+        System.out.println("    -A      NOTE: List all allowed tags that you want to process");
+        System.out.println("    -R      NOTE: List all restricted tags that you dont want to process");
         System.out.println("---");
         System.out.println("    -OW or -noOW   NOTE: -OW option rewrites nameOfFile if its already present in the working directory" +
                 "\n         NOTE: -noOW option does not overwrite file, using program with this option could mean that you need to provide different nameOfFile" );
@@ -161,7 +174,29 @@ public class ChooseYourOperation {
                 boolean canContinue = checkIfFileExistsOperations(fileToGenerateOutputToPreParse,".xml", arguments[argumentIndex]);
                 argumentIndex++;
                 if(!canContinue){
-                    System.out.println("Specified file name " + fileToGenerateOutputToPreParse + " already exists, choose -OW or specify another file name");
+                    System.out.println("Specified file name " + fileToGenerateOutputToPreParse + " already exists, choose -OW or specify another file name.");
+                    exit(1);
+                }
+                if(!arguments[argumentIndex].equals("-A")){
+                    System.out.println("Please specify allowed tags that you want to process.");
+                    exit(1);
+                }
+                argumentIndex++;
+                while(!arguments[argumentIndex].equals("-R")){
+                    positiveTags.add(arguments[argumentIndex]);
+                    argumentIndex++;
+                }
+                argumentIndex++;
+                while(!arguments[argumentIndex].equals("-PO") && !arguments[argumentIndex].equals("-noPO")){
+                    if(argumentIndex+1 >= arguments.length){
+                        System.out.println("Invalid number of arguments, use -help");
+                        exit(1);
+                    }
+                    negativeTags.add(arguments[argumentIndex]);
+                    argumentIndex++;
+                }
+                if(positiveTags.isEmpty() || negativeTags.isEmpty()){
+                    System.out.println("Invalid number of arguments, use -help");
                     exit(1);
                 }
                 preloadRan = true;

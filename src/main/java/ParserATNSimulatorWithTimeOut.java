@@ -27,7 +27,6 @@ public class ParserATNSimulatorWithTimeOut extends ParserATNSimulator {
         Duration timeElapsed = Duration.between(start, Instant.now());
         if (timeElapsed.toMinutes() >= timeOut )
         {
-            System.out.println("parse too long");
             Exception e = new ParseCancellationException("Too long!!!");
             throw new ParseCancellationException(e);
 

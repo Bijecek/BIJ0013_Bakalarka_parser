@@ -1,5 +1,5 @@
 public class MyParser {
     public static void main(String[] args) throws Exception {
-        ChooseYourOperation operation = new ChooseYourOperation(args);
+        new ChooseYourOperation(args);
     }
 }

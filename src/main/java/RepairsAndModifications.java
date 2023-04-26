@@ -32,11 +32,11 @@ public class RepairsAndModifications {
         StringBuilder modified_statement = new StringBuilder(statement_text);
         while ((index = statement_text.toLowerCase().indexOf(search_string, searchIndex)) != -1) {
             for (int i = index - 1; i >= 0; i--) {
-                if (i < statementText.length() && statement_text.charAt(i) == ',') {
+                if (statement_text.charAt(i) == ',') {
                     modified = true;
                     modified_statement.setCharAt(i, ' ');
                     break;
-                } else if (i < statementText.length() && statement_text.charAt(i) != ' ' && statement_text.charAt(i) != '\n') {
+                } else if (statement_text.charAt(i) != ' ' && statement_text.charAt(i) != '\n') {
                     break;
                 }
             }
@@ -63,8 +63,8 @@ public class RepairsAndModifications {
         StringBuilder modified_statement = new StringBuilder(statement_text);
         statement_text = statement_text.toLowerCase();
         while ((index = statement_text.indexOf(search_string, searchIndex)) != -1) {
-            if ((!search_string.equals("group ") && (!search_string.equals("\ngroup "))) || !statement_text.substring(searchIndex, index).contains("within ")) {
-                for (int i = (index + search_string.length() - 1); i < statement_text.length(); i++) {
+            if (/*(!search_string.equals("group ") && (!search_string.equals("\ngroup "))) || */!statement_text.substring(searchIndex, index).contains("within ") || search_string.equals("order ")) {
+                for (int i = (index + search_string.length()); i < statement_text.length(); i++) {
                     if (statement_text.charAt(i) != ' ' && statement_text.charAt(i) != '\n') {
                         if (!Objects.equals(nearestSubstring(i, statement_text).toLowerCase(), "by")) {
                             modified_statement.insert(i - 1, " BY");
@@ -90,7 +90,7 @@ public class RepairsAndModifications {
         StringBuilder modified_statement = new StringBuilder(statement_text);
         while ((index = statement_text.toLowerCase().indexOf(search_string, searchIndex)) != -1) {
 
-            for (int i = (index + search_string.length() - 1); i < statement_text.length(); i++) {
+            for (int i = (index + search_string.length()); i < statement_text.length(); i++) {
                 if (statement_text.charAt(i) != ' ' && statement_text.charAt(i) != '\n' && !Character.isDigit(statement_text.charAt(i))) {
                     if (i + 2 != statement_text.length() && statement_text.charAt(i) != '*' && (Objects.equals(nearestSubstring(i, statement_text).toLowerCase(), "from") || Objects.equals(nearestSubstring(i, statement_text), ","))) {
                         modified_statement.insert(i, "* ");
@@ -276,8 +276,7 @@ public class RepairsAndModifications {
             }
             String[] matchesArray = listMatches.toArray(new String[0]);
             Arrays.sort(matchesArray, Comparator.comparing(String::length).reversed());
-            listMatches = new HashSet<>(Arrays.asList(matchesArray));
-            for (String s : listMatches) {
+            for (String s : matchesArray) {
                 statementText = statementText.replace(s, "[" + s + "]");
             }
             statementModified = true;

@@ -76,7 +76,7 @@ public class XMLHandler {
 
     }
 
-    public void addToXMLCorrect(ArrayList<String> text, ArrayList<Integer> id, ArrayList<Boolean> repairDone,ArrayList<String> repairs, int testId) throws TransformerException, IOException {
+    public void addToTXTCorrect(ArrayList<String> text, ArrayList<Integer> id, ArrayList<Boolean> repairDone, ArrayList<String> repairs, int testId) throws TransformerException, IOException {
         BufferedWriter bw = new BufferedWriter(new FileWriter(this.outputFile,true));
         int index = 0;
         for (String i : text) {

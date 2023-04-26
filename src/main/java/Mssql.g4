@@ -3219,7 +3219,6 @@ column_def_table_constraint
 // There is a documentation error: column definition elements can be given in
 // any order
 column_definition
-//not sure
     : id_ (data_type | AS expression PERSISTED? )
       column_definition_element*
       column_index?
@@ -3460,7 +3459,6 @@ constant_LOCAL_ID
 // https://docs.microsoft.com/en-us/sql/t-sql/language-elements/expressions-transact-sql
 // Operator precendence: https://docs.microsoft.com/en-us/sql/t-sql/language-elements/operator-precedence-transact-sql
 expression
-//not sure
     : primitive_expression
     | function_call
     | expression '.' (value_call | query_call | exist_call | modify_call)
@@ -3540,12 +3538,6 @@ update_elem_merge
 
 // https://docs.microsoft.com/en-us/sql/t-sql/queries/search-condition-transact-sql
 search_condition
-//not sure
-//orig
-//: NOT* (predicate | '(' search_condition ')')
-//| search_condition AND search_condition // AND takes precedence over OR
-//| search_condition OR search_condition
-
     : NOT* (predicate | '(' search_condition ')')
     | search_condition AND search_condition // AND takes precedence over OR
     | search_condition OR search_condition
@@ -3724,8 +3716,6 @@ select_list_elem
     ;
 
 table_sources
-//orig
-//: source+= table_source (',' source+=table_source)*
     : non_ansi_join
     | source+= '<'? table_source '>'? (',' source+='<'? table_source '>'?)*
     ;

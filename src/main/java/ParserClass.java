@@ -74,6 +74,8 @@ public class ParserClass implements ANTLRErrorListener {
 
     private RepairsAndModifications repair = new RepairsAndModifications();
 
+    private int repairsMade=0;
+
 
     public ParserClass(int testId, String path) throws IOException, ParserConfigurationException, TransformerException, SAXException {
         this.path = path;
@@ -265,7 +267,7 @@ public class ParserClass implements ANTLRErrorListener {
     private void saveCorrectAndWrongXml() throws TransformerException, IOException {
         //we are saving correct and wrong statements
         this.xmlHandlerWrong.addToXML(this.wrongStatements, this.wrongIds,this.wrongRepairsDone, this.allWrongRepairs, this.testId);
-        this.xmlHandlerCorrect.addToXMLCorrect(this.correctStatements, this.correctIds,this.correctRepairsDone,this.allCorrectRepairs, this.testId);
+        this.xmlHandlerCorrect.addToTXTCorrect(this.correctStatements, this.correctIds,this.correctRepairsDone,this.allCorrectRepairs, this.testId);
     }
 
     private void resetArrays() {
@@ -295,6 +297,7 @@ public class ParserClass implements ANTLRErrorListener {
     private void handleAdvancedRepairs() {
         //this method handles advanced repairs with help of ANTLR error messages
         if (this.testId == 10 && this.repairOptions.size() != 0) {
+            repairsMade--;
             repairPermutations = new ArrayList<>();
             int size = 1;
             //we are testing if those repair combinations are no more than 500
@@ -306,6 +309,7 @@ public class ParserClass implements ANTLRErrorListener {
             }
             //we want no more than 500 possible combinations of repairs
             if (size <= 500) {
+                repairsMade++;
                 generateRepairPermutations(this.repairOptions, repairPermutations, 0, "");
             }
             positionsForRepair = new ArrayList<>();
@@ -423,6 +427,7 @@ public class ParserClass implements ANTLRErrorListener {
 
     public void run() throws Exception {
         try {
+            double start = System.currentTimeMillis();
             BufferedReader read;
             if (this.testId == 0) {
                 read = new BufferedReader(new FileReader(path + ".xml"));
@@ -432,6 +437,7 @@ public class ParserClass implements ANTLRErrorListener {
             System.out.println("Test"+this.testId+" launched");
             String line;
             //reading line by line
+            repairsMade=0;
             while ((line = read.readLine()) != null) {
                 if (line.contains("<statement id")) {
                     line = StringEscapeUtils.unescapeXml(line);
@@ -440,6 +446,7 @@ public class ParserClass implements ANTLRErrorListener {
                     executeTestModification();
                     if (Integer.parseInt(this.statementId) != 61299191 && Integer.parseInt(this.statementId) != 61300771 && Integer.parseInt(this.statementId) != 28905401 && Integer.parseInt(this.statementId) != 68073560) {
                         if (repair.getStatementModified()) {
+                            repairsMade++;
                             parseAndSaveCorrectOrWrongStatement();
                         } else {
                             this.wrongStatements.add(this.statementText.replaceAll("\n","&#xA;"));
@@ -464,7 +471,9 @@ public class ParserClass implements ANTLRErrorListener {
             }
             //close BufferedReader and print results
             read.close();
-
+            double end = System.currentTimeMillis();
+            System.out.println("TEST"+this.testId+" ="+ (((end - start)/60000)*60)+" seconds");
+            System.out.println("Pokus oprav: "+repairsMade);
             //increment testId and proceed to another test-case
             this.testId += 1;
             if (testId == 12) {

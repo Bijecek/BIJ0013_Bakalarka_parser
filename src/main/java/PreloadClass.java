@@ -56,14 +56,19 @@ public class PreloadClass {
 
     private ArrayList<Integer> passedIds = new ArrayList<>();
 
+    private ArrayList<String> positiveT;
+    private ArrayList<String> negativeT;
 
-    public PreloadClass(String input, String output) throws ParserConfigurationException, IOException, TransformerException, SAXException {
+
+    public PreloadClass(String input, String output, ArrayList<String> positiveT, ArrayList<String> negativeT) throws ParserConfigurationException, IOException, TransformerException, SAXException {
         this.xmlHandler = new XMLHandler(output+".xml");
         this.sevenZFile = new SevenZFile(new File(input));
+        this.positiveT = positiveT;
+        this.negativeT = negativeT;
     }
 
     //method used to get information from XML file such as statement ID, tags that this question contains etc ...
-    private void getInfoFromXmlFile() throws IOException, SAXException {
+    private boolean getInfoFromXmlFile() throws IOException, SAXException {
         parentHasExpectedFlags = false;
 
         is.setCharacterStream(new StringReader(line));
@@ -71,8 +76,20 @@ public class PreloadClass {
         doc = db.parse(is);
 
         tags = doc.getDocumentElement().getAttribute("Tags");
-        positiveTags = tags.contains("sql-server") || tags.contains("mssql") || tags.contains("ms-sql-server") || tags.contains("sql-srever") || tags.contains("tsql");
-        negativeTags = tags.contains("linq") || tags.contains("coldfusion") || tags.contains("db2") || tags.contains("oracle") || tags.contains("mdx") || tags.contains("postgresql") || tags.contains("mysql") || tags.contains("cfml") || tags.contains("linq-to-sql") || tags.contains("vbscript") || tags.contains(".net") || tags.contains("c++") || tags.contains("ado") || tags.contains("ms-access") || tags.contains("vba") || tags.contains("asp-classic") || tags.contains("c%23") || tags.contains("c#") || tags.contains("php") || tags.contains("java") || tags.contains("python") || tags.contains("ruby");
+        positiveTags = false;
+        negativeTags = false;
+        for(String pTag : positiveT){
+            if(tags.contains(pTag)){
+                positiveTags = true;
+                break;
+            }
+        }
+        for(String nTag : negativeT){
+            if(tags.contains(nTag)){
+                negativeTags = true;
+                break;
+            }
+        }
         questionAnswerId = Integer.parseInt(doc.getDocumentElement().getAttribute("Id"));
         parentOrChildId = doc.getDocumentElement().getAttribute("PostTypeId");
 
@@ -82,6 +99,7 @@ public class PreloadClass {
                 parentHasExpectedFlags = true;
             }
         }
+        return parentHasExpectedFlags || (positiveTags && !negativeTags);
     }
 
     //method that removes comments from statement for faster parsing (can be disabled)
@@ -174,10 +192,9 @@ public class PreloadClass {
 
             if (line.contains("<") && line.contains("/>")) {
                 bytesString = "";
-                getInfoFromXmlFile();
 
                 //continue if parent ticket has required tags or this ticket has valid tags
-                if (parentHasExpectedFlags || (positiveTags && !negativeTags)) {
+                if (getInfoFromXmlFile()) {
                     //get text from <code> elements
                     textInsideCodeTags = StringUtils.substringsBetween(doc.getDocumentElement().getAttribute("Body"), "<code>", "</code>");
 
@@ -201,7 +218,7 @@ public class PreloadClass {
             System.out.println("Name: " + entry.getName());
             System.out.println("Size : " + entry.getSize());
             System.out.println("--------------------------------");
-
+            long start = System.currentTimeMillis();
             lengthRead = (int) (entry.getSize() * 0.001);
             bytes = new byte[lengthRead];
 
@@ -234,6 +251,8 @@ public class PreloadClass {
                 xmlHandler.addToXML(passedStatements, passedIds,null,null,0);
             }
             System.out.println("Finished preParsing");
+            long end = System.currentTimeMillis();
+            System.out.println("PreParse time ="+ ((end - start)/60000)+" minutes");
 
             sevenZFile.close();
         } catch (Exception e) {
