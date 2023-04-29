@@ -1,6 +1,5 @@
 import org.apache.commons.lang3.StringUtils;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,93 +24,93 @@ public class RepairsAndModifications {
     }
 
     //this method handles comma before entered clause as well as adding space before this clause (FROM, WHERE etc...)
-    private ArrayList<String> removeCommaOrSomethingInfront(String search_string, String statement_text, boolean add_space_infront) {
+    private ArrayList<String> removeCommaOrSomethingInfront(String searchString, String statementText, boolean addSpaceInfront) {
         int index;
         int searchIndex = 0;
         boolean modified = false;
-        StringBuilder modified_statement = new StringBuilder(statement_text);
-        while ((index = statement_text.toLowerCase().indexOf(search_string, searchIndex)) != -1) {
+        StringBuilder modifiedStatement = new StringBuilder(statementText);
+        while ((index = statementText.toLowerCase().indexOf(searchString, searchIndex)) != -1) {
             for (int i = index - 1; i >= 0; i--) {
-                if (statement_text.charAt(i) == ',') {
+                if (statementText.charAt(i) == ',') {
                     modified = true;
-                    modified_statement.setCharAt(i, ' ');
+                    modifiedStatement.setCharAt(i, ' ');
                     break;
-                } else if (statement_text.charAt(i) != ' ' && statement_text.charAt(i) != '\n') {
+                } else if (statementText.charAt(i) != ' ' && statementText.charAt(i) != '\n') {
                     break;
                 }
             }
-            if (add_space_infront) {
-                if (index > 0 && statement_text.charAt(index - 1) != ' ' && statement_text.charAt(index - 1) != '\n') {
-                    modified_statement.insert(index - 1, ' ');
+            if (addSpaceInfront) {
+                if (index > 0 && statementText.charAt(index - 1) != ' ' && statementText.charAt(index - 1) != '\n') {
+                    modifiedStatement.insert(index - 1, ' ');
                     modified = true;
 
                 }
             }
-            searchIndex = index + search_string.length();
+            searchIndex = index + searchString.length();
         }
         ArrayList<String> array = new ArrayList<>();
-        array.add(modified_statement.toString());
+        array.add(modifiedStatement.toString());
         array.add(Boolean.toString(modified));
         return array;
     }
 
     //this method handles BY insertion after entered clause (ORDER, GROUP)
-    private ArrayList<String> insertByAfter(String search_string, String statement_text) {
+    private ArrayList<String> insertByAfter(String searchString, String statementText) {
         int index;
         int searchIndex = 0;
         boolean modified = false;
-        StringBuilder modified_statement = new StringBuilder(statement_text);
-        statement_text = statement_text.toLowerCase();
-        while ((index = statement_text.indexOf(search_string, searchIndex)) != -1) {
-            if (/*(!search_string.equals("group ") && (!search_string.equals("\ngroup "))) || */!statement_text.substring(searchIndex, index).contains("within ") || search_string.equals("order ")) {
-                for (int i = (index + search_string.length()); i < statement_text.length(); i++) {
-                    if (statement_text.charAt(i) != ' ' && statement_text.charAt(i) != '\n') {
-                        if (!Objects.equals(nearestSubstring(i, statement_text).toLowerCase(), "by")) {
-                            modified_statement.insert(i - 1, " BY");
+        StringBuilder modifiedStatement = new StringBuilder(statementText);
+        statementText = statementText.toLowerCase();
+        while ((index = statementText.indexOf(searchString, searchIndex)) != -1) {
+            if (!statementText.substring(searchIndex, index).contains("within ") || searchString.equals("order ")) {
+                for (int i = (index + searchString.length()); i < statementText.length(); i++) {
+                    if (statementText.charAt(i) != ' ' && statementText.charAt(i) != '\n') {
+                        if (!Objects.equals(nearestSubstring(i, statementText).toLowerCase(), "by")) {
+                            modifiedStatement.insert(i - 1, " BY");
                             modified = true;
                         }
                         break;
                     }
                 }
             }
-            searchIndex = index + search_string.length() - 1;
+            searchIndex = index + searchString.length() - 1;
         }
         ArrayList<String> array = new ArrayList<>();
-        array.add(modified_statement.toString());
+        array.add(modifiedStatement.toString());
         array.add(Boolean.toString(modified));
         return array;
     }
 
     //method that checks for valid MSSQL TOP clause
-    private ArrayList<String> checkForValidTop(String search_string, String statement_text) {
+    private ArrayList<String> checkForValidTop(String searchString, String statementText) {
         int index;
         int searchIndex = 0;
         boolean modified = false;
-        StringBuilder modified_statement = new StringBuilder(statement_text);
-        while ((index = statement_text.toLowerCase().indexOf(search_string, searchIndex)) != -1) {
+        StringBuilder modifiedStatement = new StringBuilder(statementText);
+        while ((index = statementText.toLowerCase().indexOf(searchString, searchIndex)) != -1) {
 
-            for (int i = (index + search_string.length()); i < statement_text.length(); i++) {
-                if (statement_text.charAt(i) != ' ' && statement_text.charAt(i) != '\n' && !Character.isDigit(statement_text.charAt(i))) {
-                    if (i + 2 != statement_text.length() && statement_text.charAt(i) != '*' && (Objects.equals(nearestSubstring(i, statement_text).toLowerCase(), "from") || Objects.equals(nearestSubstring(i, statement_text), ","))) {
-                        modified_statement.insert(i, "* ");
+            for (int i = (index + searchString.length()); i < statementText.length(); i++) {
+                if (statementText.charAt(i) != ' ' && statementText.charAt(i) != '\n' && !Character.isDigit(statementText.charAt(i))) {
+                    if (i + 2 != statementText.length() && statementText.charAt(i) != '*' && (Objects.equals(nearestSubstring(i, statementText).toLowerCase(), "from") || Objects.equals(nearestSubstring(i, statementText), ","))) {
+                        modifiedStatement.insert(i, "* ");
                         modified = true;
                     }
                     break;
                 }
             }
-            searchIndex = index + search_string.length() - 1;
+            searchIndex = index + searchString.length() - 1;
         }
         ArrayList<String> array = new ArrayList<>();
-        array.add(modified_statement.toString());
+        array.add(modifiedStatement.toString());
         array.add(Boolean.toString(modified));
         return array;
     }
 
     //method that finds the nearest substring to given index
-    private String nearestSubstring(int start_Index, String text) {
+    private String nearestSubstring(int startIndex, String text) {
         String nearest = "";
         boolean found = false;
-        for (int i = start_Index; i < text.length(); i++) {
+        for (int i = startIndex; i < text.length(); i++) {
             if (text.charAt(i) != '\n' && text.charAt(i) != ' ') {
                 nearest += text.charAt(i);
                 found = true;
@@ -217,9 +216,9 @@ public class RepairsAndModifications {
             int right = StringUtils.countMatches(statementText, ")");
             if (left != right) {
                 if (left > right && right != 0) {
-                    int index_r = statementText.indexOf(")") + 1;
-                    if (Objects.equals(nearestSubstring(index_r, statementText).toLowerCase(), "from") || Objects.equals(nearestSubstring(index_r, statementText), ",")) {
-                        statementText = statementText.substring(0, index_r) + ") " + statementText.substring(index_r + 1);
+                    int indexR = statementText.indexOf(")") + 1;
+                    if (Objects.equals(nearestSubstring(indexR, statementText).toLowerCase(), "from") || Objects.equals(nearestSubstring(indexR, statementText), ",")) {
+                        statementText = statementText.substring(0, indexR) + ") " + statementText.substring(indexR + 1);
                         statementModified = true;
 
                     }
@@ -291,14 +290,14 @@ public class RepairsAndModifications {
         ArrayList<Integer> updatedPositionsForRepair = new ArrayList<>(positionsForRepair);
         int shiftIndex = 0;
         String[] possibleRepairsArray = possibleRepairs.split(";");
-        StringBuilder repaired_statement = new StringBuilder(statementForParser);
+        StringBuilder repairedStatement = new StringBuilder(statementForParser);
         for (int i = 0; i < possibleRepairsArray.length; i++) {
-            repaired_statement.insert(updatedPositionsForRepair.get(i), " " + possibleRepairsArray[i] + " ");
+            repairedStatement.insert(updatedPositionsForRepair.get(i), " " + possibleRepairsArray[i] + " ");
             for (int x = shiftIndex + 1; x < updatedPositionsForRepair.size(); x++) {
                 updatedPositionsForRepair.set(x, updatedPositionsForRepair.get(x) + (" " + possibleRepairsArray[i] + " ").length());
             }
             shiftIndex++;
         }
-        return repaired_statement.toString();
+        return repairedStatement.toString();
     }
 }

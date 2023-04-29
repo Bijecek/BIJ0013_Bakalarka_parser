@@ -1,0 +1,43 @@
+--Oprava 1 - Čárka před FROM 
+SELECT a,
+FROM B
+WHERE c = 0 OR b = 0
+--Oprava 2 - Čárka před WHERE 
+SELECT a,b,c
+FROM B,
+WHERE a=0
+--Oprava 3 - GROUP bez klíčového slova BY 
+SELECT a
+FROM b
+GROUP a,b
+--Oprava 4 - ORDER bez klíčového slova BY
+SELECT a
+FROM b
+ORDER a,b
+--Oprava 5 - Špatná syntaxe SELECT TOP
+SELECT TOP 1
+FROM b
+--Oprava 6 - Nadbytečné závorky
+SELECT (SELECT a FROM b ))
+FROM c
+--Oprava 7 - Přidání závorky
+SELECT (SELECT a FROM b ()
+FROM c
+--Oprava 8 - Čárka před AS
+CREATE PROCEDURE GetProductDesc @var_temp varchar(10),
+AS BEGIN
+SELECT a
+FROM B
+END
+--Oprava 9 - Čárka před závorkou
+SELECT k,m,(SELECT a FROM a,)
+FROM c
+--Oprava 10 - Lokalizace chyb za pomocí ANTLR
+SELECT (SELECT a FROM b
+from c
+--Oprava 11 - Dvojité rovnítko, tři tečky, špatné komentáře, chyba s parametry
+...
+SELECT c
+FROM B JOIN D ON B.c = D.c
+WHERE b=0
+...

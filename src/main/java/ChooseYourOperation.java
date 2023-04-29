@@ -1,10 +1,6 @@
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -14,7 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.Scanner;
 
 import static java.lang.System.exit;
 
@@ -65,7 +60,6 @@ public class ChooseYourOperation {
         }
     }
     private void printHelp(){
-        //-PP C:\Users\sisin\Downloads\Posts.7z DeletemeLater -OW -PO -SF vysledky_delete -OW
         System.out.println("HELP menu:");
         System.out.println("The arguments you are looking for may be listed below:");
         System.out.println("--");

@@ -19,7 +19,7 @@ import org.apache.commons.text.*;
 
 public class PreloadClass {
     private SevenZFile sevenZFile;
-    private XMLHandler xmlHandler;
+    private FileHandler fileHandler;
 
     private Set<Integer> questionsId = new HashSet<>();
 
@@ -61,7 +61,7 @@ public class PreloadClass {
 
 
     public PreloadClass(String input, String output, ArrayList<String> positiveT, ArrayList<String> negativeT) throws ParserConfigurationException, IOException, TransformerException, SAXException {
-        this.xmlHandler = new XMLHandler(output+".xml");
+        this.fileHandler = new FileHandler(output+".xml");
         this.sevenZFile = new SevenZFile(new File(input));
         this.positiveT = positiveT;
         this.negativeT = negativeT;
@@ -125,8 +125,8 @@ public class PreloadClass {
             String[] textWithoutComments = StringUtils.substringsBetween(currentLine, commentType, closureType);
             if (textWithoutComments != null && textWithoutComments.length > 0) {
                 Arrays.sort(textWithoutComments, Comparator.comparingInt(String::length).reversed());
-                for (String tmp : textWithoutComments) {
-                    currentLine = currentLine.replace(commentType + tmp + closureType, "\n");
+                for (String text : textWithoutComments) {
+                    currentLine = currentLine.replace(commentType + text + closureType, "\n");
                 }
             }
         }
@@ -237,7 +237,7 @@ public class PreloadClass {
 
                 if (passedStatements.size() > 10000) {
                     //save our statements to file
-                    xmlHandler.addToXML(passedStatements, passedIds,null,null,0);
+                    fileHandler.addToXML(passedStatements, passedIds,null,null,0);
                     passedStatements = new ArrayList<>();
                     passedIds = new ArrayList<>();
                 }
@@ -248,7 +248,7 @@ public class PreloadClass {
             }
             if (passedStatements.size() > 0) {
                 //save our statements to file
-                xmlHandler.addToXML(passedStatements, passedIds,null,null,0);
+                fileHandler.addToXML(passedStatements, passedIds,null,null,0);
             }
             System.out.println("Finished preParsing");
             long end = System.currentTimeMillis();

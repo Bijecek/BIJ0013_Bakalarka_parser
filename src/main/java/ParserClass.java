@@ -21,9 +21,9 @@ import org.xml.sax.SAXException;
 
 public class ParserClass implements ANTLRErrorListener {
     private int testId;
-    private XMLHandler xmlHandlerWrong;
+    private FileHandler fileHandlerWrong;
 
-    private XMLHandler xmlHandlerCorrect;
+    private FileHandler fileHandlerCorrect;
 
     private ArrayList<ArrayList<String>> repairOptions = new ArrayList<>();
     private ArrayList<String> repairRowAndCharpos = new ArrayList<>();
@@ -74,21 +74,20 @@ public class ParserClass implements ANTLRErrorListener {
 
     private RepairsAndModifications repair = new RepairsAndModifications();
 
-    private int repairsMade=0;
 
 
     public ParserClass(int testId, String path) throws IOException, ParserConfigurationException, TransformerException, SAXException {
         this.path = path;
         //create or modify file, that will be later written to
-        this.xmlHandlerWrong = new XMLHandler(path + "_wrong" + (testId) + ".xml");
+        this.fileHandlerWrong = new FileHandler(path + "_wrong" + (testId) + ".xml");
         if(testId == 0){
-            this.xmlHandlerCorrect = new XMLHandler(path + "_correct.txt", false);
+            this.fileHandlerCorrect = new FileHandler(path + "_correct.txt", false);
         }
         else if (testId == 1) {
-            this.xmlHandlerCorrect = new XMLHandler(path + "_repaired.txt", false);
+            this.fileHandlerCorrect = new FileHandler(path + "_repaired.txt", false);
         }
         else{
-            this.xmlHandlerCorrect = new XMLHandler(path + "_repaired.txt", true);
+            this.fileHandlerCorrect = new FileHandler(path + "_repaired.txt", true);
         }
         this.testId = testId;
         setupRepairsToLookFor();
@@ -191,7 +190,6 @@ public class ParserClass implements ANTLRErrorListener {
 
         parser.setInterpreter(sim);
 
-        //parser.removeErrorListeners();
         parser.setErrorHandler(new BailErrorStrategy());
     }
     private void setupLexerAndParserSSLAndBail() {
@@ -242,21 +240,21 @@ public class ParserClass implements ANTLRErrorListener {
 
     private int convertRowColToPosition(int row, int col) {
         //the ANTLR provides row-col error message, we need to convert this row-col into position
-        int row_count = 1;
+        int rowCount = 1;
         for (int i = 0; i < this.statementForParser.length(); i++) {
             if (this.statementForParser.charAt(i) == '\n') {
-                row_count++;
+                rowCount++;
             }
-            if (row_count == row) {
-                if (row_count != 1 && col != 0) {
+            if (rowCount == row) {
+                if (rowCount != 1 && col != 0) {
                     i++;
                 }
-                int char_index = 0;
+                int charIndex = 0;
                 for (int j = i; j < this.statementForParser.length() + 1; j++) {
-                    if (char_index == col) {
+                    if (charIndex == col) {
                         return j;
                     }
-                    char_index++;
+                    charIndex++;
                 }
                 break;
             }
@@ -266,8 +264,8 @@ public class ParserClass implements ANTLRErrorListener {
 
     private void saveCorrectAndWrongXml() throws TransformerException, IOException {
         //we are saving correct and wrong statements
-        this.xmlHandlerWrong.addToXML(this.wrongStatements, this.wrongIds,this.wrongRepairsDone, this.allWrongRepairs, this.testId);
-        this.xmlHandlerCorrect.addToTXTCorrect(this.correctStatements, this.correctIds,this.correctRepairsDone,this.allCorrectRepairs, this.testId);
+        this.fileHandlerWrong.addToXML(this.wrongStatements, this.wrongIds,this.wrongRepairsDone, this.allWrongRepairs, this.testId);
+        this.fileHandlerCorrect.addToTXTCorrect(this.correctStatements, this.correctIds,this.correctRepairsDone,this.allCorrectRepairs, this.testId);
     }
 
     private void resetArrays() {
@@ -297,7 +295,6 @@ public class ParserClass implements ANTLRErrorListener {
     private void handleAdvancedRepairs() {
         //this method handles advanced repairs with help of ANTLR error messages
         if (this.testId == 10 && this.repairOptions.size() != 0) {
-            repairsMade--;
             repairPermutations = new ArrayList<>();
             int size = 1;
             //we are testing if those repair combinations are no more than 500
@@ -309,7 +306,6 @@ public class ParserClass implements ANTLRErrorListener {
             }
             //we want no more than 500 possible combinations of repairs
             if (size <= 500) {
-                repairsMade++;
                 generateRepairPermutations(this.repairOptions, repairPermutations, 0, "");
             }
             positionsForRepair = new ArrayList<>();
@@ -437,7 +433,6 @@ public class ParserClass implements ANTLRErrorListener {
             System.out.println("Test"+this.testId+" launched");
             String line;
             //reading line by line
-            repairsMade=0;
             while ((line = read.readLine()) != null) {
                 if (line.contains("<statement id")) {
                     line = StringEscapeUtils.unescapeXml(line);
@@ -446,7 +441,6 @@ public class ParserClass implements ANTLRErrorListener {
                     executeTestModification();
                     if (Integer.parseInt(this.statementId) != 61299191 && Integer.parseInt(this.statementId) != 61300771 && Integer.parseInt(this.statementId) != 28905401 && Integer.parseInt(this.statementId) != 68073560) {
                         if (repair.getStatementModified()) {
-                            repairsMade++;
                             parseAndSaveCorrectOrWrongStatement();
                         } else {
                             this.wrongStatements.add(this.statementText.replaceAll("\n","&#xA;"));
@@ -473,7 +467,6 @@ public class ParserClass implements ANTLRErrorListener {
             read.close();
             double end = System.currentTimeMillis();
             System.out.println("TEST"+this.testId+" ="+ (((end - start)/60000)*60)+" seconds");
-            System.out.println("Pokus oprav: "+repairsMade);
             //increment testId and proceed to another test-case
             this.testId += 1;
             if (testId == 12) {
@@ -495,8 +488,8 @@ public class ParserClass implements ANTLRErrorListener {
             options = StringUtils.substringBetween(s, "{", "}");
         } else {
             int index = s.indexOf("expecting");
-            String temp_string = s.substring(index);
-            options = StringUtils.substringBetween(temp_string, "'", "'");
+            String unformattedOptions = s.substring(index);
+            options = StringUtils.substringBetween(unformattedOptions, "'", "'");
             options = "'" + options + "'";
         }
         if (options != null) {
@@ -506,16 +499,16 @@ public class ParserClass implements ANTLRErrorListener {
 
     private void checkAndSaveRepairs(String options, int i, int i1) {
         //extract our allowed repairs handling
-        ArrayList<String> final_List = new ArrayList<>();
+        ArrayList<String> finalRepairsList = new ArrayList<>();
         for (String repair : this.allowedRepairs) {
             if (options.contains("'" + repair + "'")) {
-                final_List.add(repair);
+                finalRepairsList.add(repair);
             }
         }
-        if (final_List.size() != 0) {
+        if (finalRepairsList.size() != 0) {
             //add "nothing" to repair options
-            final_List.add("");
-            this.repairOptions.add(final_List);
+            finalRepairsList.add("");
+            this.repairOptions.add(finalRepairsList);
             this.repairRowAndCharpos.add(i + ";" + i1);
         }
     }
@@ -526,12 +519,12 @@ public class ParserClass implements ANTLRErrorListener {
         String options;
         int index = s.indexOf("missing");
         if (index != -1) {
-            int index_end = s.indexOf("at");
-            String temp_string = s.substring(index, index_end);
+            int indexEnd = s.indexOf("at");
+            String unformattedOptions = s.substring(index, indexEnd);
             if (s.contains("{") && s.contains("}")) {
                 options = StringUtils.substringBetween(s, "{", "}");
             } else {
-                options = StringUtils.substringBetween(temp_string, "'", "'");
+                options = StringUtils.substringBetween(unformattedOptions, "'", "'");
                 options = "'" + options + "'";
             }
 
@@ -558,7 +551,7 @@ public class ParserClass implements ANTLRErrorListener {
             }
         }
         read.close();
-        XMLHandler saveSummary = new XMLHandler(file+".txt",false);
+        FileHandler saveSummary = new FileHandler(file+".txt",false);
         saveSummary.saveSummaryResults(path,testCombinations,numberOfResults);
     }
 

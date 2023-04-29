@@ -1,10 +1,42 @@
-import org.junit.Test;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-import static junit.framework.TestCase.assertEquals;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class RepairsAndModificationsTest {
     double start;
     double end;
+
+    public static ArrayList<String> testCases = new ArrayList<>();
+    @Test
+    @Order(0)
+    public void loadFromFile() throws IOException {
+        BufferedReader br=new BufferedReader(new FileReader("predpripraveneSQL.txt"));
+        String line="";
+        StringBuilder sb = new StringBuilder();
+        while((line = br.readLine()) != null){
+            if(line.startsWith("--Oprava ") && !sb.isEmpty()){
+                testCases.add(sb.toString());
+                sb = new StringBuilder();
+            }
+            else if(!line.startsWith("--Oprava ")){
+                sb.append(line);
+                sb.append("\n");
+            }
+        }
+        if(!sb.isEmpty()){
+            testCases.add(sb.toString());
+        }
+    }
 
     private void setAndTestStatement(RepairsAndModifications repair, ParserClass parse){
         parse.setStatementText(repair.getStatementText());
@@ -18,13 +50,14 @@ public class RepairsAndModificationsTest {
     }
     private void endAndResult(int testId){
         end = System.currentTimeMillis();
-        System.out.println("TEST"+testId+" ="+ (((end - start)/60000)*60)+" seconds");
+        System.out.println("Repair"+testId+" ="+ (((end - start)/60000)*60)+" seconds");
     }
 
     @Test
+    @Order(1)
     public void test1FromModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT a, FROM B where c = 0 OR b = 0");
+        repair.setStatementText(testCases.get(0));
 
         ParserClass parse = new ParserClass(1);
         setAndTestStatement(repair,parse);
@@ -39,9 +72,10 @@ public class RepairsAndModificationsTest {
     }
 
     @Test
+    @Order(2)
     public void test2WhereModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT a FROM B, WHERE a=0");
+        repair.setStatementText(testCases.get(1));
 
         ParserClass parse = new ParserClass(2);
         setAndTestStatement(repair,parse);
@@ -57,9 +91,10 @@ public class RepairsAndModificationsTest {
     }
 
     @Test
+    @Order(3)
     public void test3GroupModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT a FROM b GROUP a,b");
+        repair.setStatementText(testCases.get(2));
 
         ParserClass parse = new ParserClass(3);
         setAndTestStatement(repair,parse);
@@ -75,9 +110,10 @@ public class RepairsAndModificationsTest {
     }
 
     @Test
+    @Order(4)
     public void test4OrderModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT a FROM b ORDER a,b");
+        repair.setStatementText(testCases.get(3));
 
         ParserClass parse = new ParserClass(4);
         setAndTestStatement(repair,parse);
@@ -93,9 +129,10 @@ public class RepairsAndModificationsTest {
     }
 
     @Test
+    @Order(5)
     public void test5TopModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT TOP 1 FROM b");
+        repair.setStatementText(testCases.get(4));
 
         ParserClass parse = new ParserClass(5);
         setAndTestStatement(repair,parse);
@@ -111,9 +148,10 @@ public class RepairsAndModificationsTest {
     }
 
     @Test
+    @Order(6)
     public void test6Brackets1stModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT (SELECT a FROM b )) FROM c");
+        repair.setStatementText(testCases.get(5));
 
         ParserClass parse = new ParserClass(6);
         setAndTestStatement(repair,parse);
@@ -129,9 +167,10 @@ public class RepairsAndModificationsTest {
     }
 
     @Test
+    @Order(7)
     public void test7Brackets2ndModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT (SELECT a FROM b () FROM c");
+        repair.setStatementText(testCases.get(6));
 
         ParserClass parse = new ParserClass(7);
         setAndTestStatement(repair,parse);
@@ -147,14 +186,10 @@ public class RepairsAndModificationsTest {
     }
 
     @Test
+    @Order(8)
     public void test8AsModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("CREATE PROCEDURE GetProductDesc\n" +
-                "@var_temp varchar(10), \n"+
-                "AS\n" +
-                "BEGIN\n" +
-                "SELECT a FROM B \n" +
-                "END");
+        repair.setStatementText(testCases.get(7));
 
         ParserClass parse = new ParserClass(8);
         setAndTestStatement(repair,parse);
@@ -170,9 +205,10 @@ public class RepairsAndModificationsTest {
     }
 
     @Test
+    @Order(9)
     public void test9Brackets3rdModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT (SELECT a FROM a,) FROM c");
+        repair.setStatementText(testCases.get(8));
 
         ParserClass parse = new ParserClass(9);
         setAndTestStatement(repair,parse);
@@ -187,9 +223,10 @@ public class RepairsAndModificationsTest {
         endAndResult(9);
     }
     @Test
+    @Order(10)
     public void test10AdvancedModification() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("SELECT (SELECT a FROM b from c");
+        repair.setStatementText(testCases.get(9));
 
         //testId 9 is there because if we type testId 10, the tool will automatically repair it
         //we need to see that this SQL command is wrong
@@ -206,12 +243,10 @@ public class RepairsAndModificationsTest {
         endAndResult(10);
     }
     @Test
+    @Order(11)
     public void test11RemoveDots() {
         RepairsAndModifications repair = new RepairsAndModifications();
-        repair.setStatementText("...\n" +
-                "SELECT a FROM b\n" +
-                "WHERE b = 0\n" +
-                "...");
+        repair.setStatementText(testCases.get(10));
 
 
         ParserClass parse = new ParserClass(11);
